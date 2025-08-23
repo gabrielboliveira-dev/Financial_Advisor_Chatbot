@@ -1,10 +1,9 @@
 package br.com.financialchatbot.backend.infrastructure.external.apis.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record BrapiAssetResponse(
-        String symbol,
-        String longName,
-        String market
+public record BrapiApiResponseDto(
+        List<BrapiQuoteDto> results
 ) {}

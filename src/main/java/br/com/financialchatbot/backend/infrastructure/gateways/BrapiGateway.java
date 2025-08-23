@@ -2,11 +2,11 @@ package br.com.financialchatbot.backend.infrastructure.gateways;
 
 import br.com.financialchatbot.backend.domain.entities.FinancialAsset;
 import br.com.financialchatbot.backend.domain.gateways.FinancialAssetGateway;
-import br.com.financialchatbot.backend.infrastructure.external.apis.dto.BrapiAssetResponse;
+import br.com.financialchatbot.backend.infrastructure.external.apis.dto.BrapiQuoteDto;
+import br.com.financialchatbot.backend.infrastructure.external.apis.dto.BrapiApiResponseDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
@@ -24,20 +24,22 @@ public class BrapiGateway implements FinancialAssetGateway {
     @Override
     public Optional<FinancialAsset> findByTicker(String ticker) {
         try {
-            BrapiAssetResponse response = webClient.get()
+            BrapiApiResponseDto response = webClient.get()
                     .uri(uriBuilder -> uriBuilder.path("/quote/{ticker}").build(ticker))
                     .retrieve()
-                    .bodyToMono(BrapiAssetResponse.class)
+                    .bodyToMono(BrapiApiResponseDto.class)
                     .block();
 
-            if (response == null) {
+            if (response == null || response.results() == null || response.results().isEmpty()) {
                 return Optional.empty();
             }
 
+            var quote = response.results().get(0);
+
             FinancialAsset asset = new FinancialAsset(
-                    response.symbol(),
-                    response.longName(),
-                    response.market()
+                    quote.symbol(),
+                    quote.longName(),
+                    "B3"
             );
             return Optional.of(asset);
         } catch (Exception e) {
