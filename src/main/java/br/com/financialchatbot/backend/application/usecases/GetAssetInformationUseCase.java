@@ -1,15 +1,23 @@
 package br.com.financialchatbot.backend.application.usecases;
 
 import br.com.financialchatbot.backend.domain.entities.FinancialAsset;
+import br.com.financialchatbot.backend.domain.gateways.FinancialAssetGateway;
 import org.springframework.stereotype.Component;
+
+import java.util.NoSuchElementException;
 
 @Component
 public class GetAssetInformationUseCase {
 
-    public Output execute(Input input) {
-        System.out.println("Buscando informações para o ticker: " + input.tickerSymbol());
+    private final FinancialAssetGateway assetGateway;
 
-        var asset = new FinancialAsset(input.tickerSymbol(), "Empresa Fictícia S.A.", "B3");
+    public GetAssetInformationUseCase(FinancialAssetGateway assetGateway) {
+        this.assetGateway = assetGateway;
+    }
+
+    public Output execute(Input input) {
+        FinancialAsset asset = assetGateway.findByTicker(input.tickerSymbol())
+                .orElseThrow(() -> new NoSuchElementException("Ativo não encontrado: " + input.tickerSymbol()));
 
         return new Output(
                 asset.getTickerSymbol(),
@@ -19,7 +27,7 @@ public class GetAssetInformationUseCase {
                 -0.05
         );
     }
-    public record Input(String tickerSymbol) {}
 
+    public record Input(String tickerSymbol) {}
     public record Output(String tickerSymbol, String companyName, String market, double currentPrice, double dailyChange) {}
 }
