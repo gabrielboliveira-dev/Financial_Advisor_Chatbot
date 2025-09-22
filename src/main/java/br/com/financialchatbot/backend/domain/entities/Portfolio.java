@@ -18,6 +18,10 @@ public class Portfolio {
         this.assets = new ArrayList<>(assets != null ? assets : List.of());
     }
 
+    public void removeAsset(String tickerToRemove) {
+        this.assets.removeIf(asset -> asset.ticker().equalsIgnoreCase(tickerToRemove));
+    }
+
     public void addAsset(PortfolioAsset assetToAdd) {
         Optional<PortfolioAsset> existingAssetOpt = this.assets.stream()
                 .filter(a -> a.ticker().equalsIgnoreCase(assetToAdd.ticker()))
