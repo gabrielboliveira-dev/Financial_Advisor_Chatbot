@@ -1,6 +1,7 @@
 package br.com.financialchatbot.backend.infrastructure.telegram;
 
-import br.com.financialchatbot.backend.application.usecases.GetAssetInformationUseCase;
+import br.com.financialchatbot.backend.application.usecases.*;
+import br.com.financialchatbot.backend.domain.entities.Portfolio;
 import br.com.financialchatbot.backend.domain.gateways.NluGateway;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -8,34 +9,38 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import br.com.financialchatbot.backend.application.usecases.CreateOrUpdateUserUseCase;
-import br.com.financialchatbot.backend.application.usecases.ViewPortfolioUseCase;
-import br.com.financialchatbot.backend.domain.entities.Portfolio;
 
-
+import java.math.BigDecimal;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 @Component
 public class FinancialAdvisorBot extends TelegramLongPollingBot {
 
     private final String botUsername;
-    private final GetAssetInformationUseCase getAssetInformationUseCase;
     private final NluGateway nluGateway;
     private final CreateOrUpdateUserUseCase createOrUpdateUserUseCase;
+    private final GetAssetInformationUseCase getAssetInformationUseCase;
     private final ViewPortfolioUseCase viewPortfolioUseCase;
+    private final AddAssetToPortfolioUseCase addAssetToPortfolioUseCase;
+    private final RemoveAssetFromPortfolioUseCase removeAssetFromPortfolioUseCase;
 
     public FinancialAdvisorBot(@Value("${telegram.bot.token}") String botToken,
                                @Value("${telegram.bot.username}") String botUsername,
-                               GetAssetInformationUseCase getAssetInformationUseCase,
                                NluGateway nluGateway,
                                CreateOrUpdateUserUseCase createOrUpdateUserUseCase,
-                               ViewPortfolioUseCase viewPortfolioUseCase) {
+                               GetAssetInformationUseCase getAssetInformationUseCase,
+                               ViewPortfolioUseCase viewPortfolioUseCase,
+                               AddAssetToPortfolioUseCase addAssetToPortfolioUseCase,
+                               RemoveAssetFromPortfolioUseCase removeAssetFromPortfolioUseCase) {
         super(botToken);
         this.botUsername = botUsername;
-        this.getAssetInformationUseCase = getAssetInformationUseCase;
         this.nluGateway = nluGateway;
         this.createOrUpdateUserUseCase = createOrUpdateUserUseCase;
+        this.getAssetInformationUseCase = getAssetInformationUseCase;
         this.viewPortfolioUseCase = viewPortfolioUseCase;
+        this.addAssetToPortfolioUseCase = addAssetToPortfolioUseCase;
+        this.removeAssetFromPortfolioUseCase = removeAssetFromPortfolioUseCase;
     }
 
     @Override
@@ -46,48 +51,72 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
             long chatId = message.getChatId();
             String firstName = message.getFrom().getFirstName();
 
-            var userInput = new CreateOrUpdateUserUseCase.Input(chatId, firstName);
-            createOrUpdateUserUseCase.execute(userInput);
+            try {
+                createOrUpdateUserUseCase.execute(new CreateOrUpdateUserUseCase.Input(chatId, firstName));
+            } catch (Exception e) {
+                handleGenericError(chatId, e);
+                return;
+            }
 
             nluGateway.interpret(messageText).ifPresentOrElse(intent -> {
-                if ("get_asset_information".equals(intent.name())) {
-                    String ticker = intent.entities().get("ticker");
-                    if (ticker != null) {
-                        executeGetAssetInfo(chatId, ticker);
-                    } else {
-                        sendMessage(chatId, "Entendi que você quer saber sobre um ativo, mas não identifiquei o código (ticker). Tente enviar algo como 'preço da PETR4'.");
-                    }
-                } else if ("view_portfolio".equals(intent.name())) {
-                    executeViewPortfolio(chatId);
-                } else {
-                    sendMessage(chatId, "Desculpe, ainda não sei como processar essa solicitação.");
+                switch (intent.name()) {
+                    case "get_asset_information" -> executeGetAssetInfo(chatId, intent.entities().get("ticker"));
+                    case "view_portfolio" -> executeViewPortfolio(chatId);
+                    case "add_asset" -> executeAddAsset(chatId, intent.entities());
+                    case "remove_asset" -> executeRemoveAsset(chatId, intent.entities().get("ticker"));
+                    default -> sendMessage(chatId, "Desculpe, ainda não sei como processar essa solicitação.");
                 }
-            }, () -> {
-                sendMessage(chatId, "Desculpe, não entendi o que você quis dizer. Você pode perguntar sobre um ativo, por exemplo: 'qual a cotação da MGLU3?'");
-            });
+            }, () -> sendMessage(chatId, "Desculpe, não entendi o que você quis dizer."));
         }
     }
 
     private void executeGetAssetInfo(long chatId, String ticker) {
+        if (ticker == null) { sendMessage(chatId, "Não consegui identificar o código do ativo."); return; }
         try {
-            var input = new GetAssetInformationUseCase.Input(ticker);
-            var output = getAssetInformationUseCase.execute(input);
-            String responseText = String.format(
-                    "📈 **%s (%s)**\n\n" +
-                    "🏢 **Mercado:** %s\n" +
-                    "💰 **Preço Atual:** R$ %.2f",
-                    output.tickerSymbol(),
-                    output.companyName(),
-                    output.market(),
-                    output.currentPrice()
-            );
+            var output = getAssetInformationUseCase.execute(new GetAssetInformationUseCase.Input(ticker));
+            String responseText = String.format("📈 **%s (%s)**\n\n🏢 **Mercado:** %s\n💰 **Preço Atual:** R$ %.2f", output.tickerSymbol(), output.companyName(), output.market(), output.currentPrice());
             sendMessage(chatId, responseText);
-        } catch (NoSuchElementException e) {
-            sendMessage(chatId, "Desculpe, não encontrei informações para o ativo: " + ticker);
-        } catch (Exception e) {
-            sendMessage(chatId, "Ocorreu um erro inesperado ao buscar dados para " + ticker + ". Por favor, tente novamente mais tarde.");
-            e.printStackTrace();
+        } catch (Exception e) { handleGenericError(chatId, e); }
+    }
+
+    private void executeViewPortfolio(long chatId) {
+        try {
+            Portfolio portfolio = viewPortfolioUseCase.execute(new ViewPortfolioUseCase.Input(chatId));
+            StringBuilder response = new StringBuilder("💼 **Sua Carteira de Investimentos**\n\n");
+            if (portfolio.getAssets().isEmpty()) {
+                response.append("Você ainda não possui ativos na sua carteira.");
+            } else {
+                portfolio.getAssets().forEach(asset -> response.append(String.format("- **%s**: %d unidades a R$ %.2f (preço médio)\n", asset.ticker(), asset.quantity(), asset.averagePrice())));
+            }
+            sendMessage(chatId, response.toString());
+        } catch (Exception e) { handleGenericError(chatId, e); }
+    }
+
+    private void executeAddAsset(long chatId, Map<String, String> entities) {
+        try {
+            String ticker = entities.get("ticker");
+            int quantity = Integer.parseInt(entities.get("quantity"));
+            BigDecimal price = new BigDecimal(entities.get("price"));
+            addAssetToPortfolioUseCase.execute(new AddAssetToPortfolioUseCase.Input(chatId, ticker, quantity, price));
+            sendMessage(chatId, String.format("✅ Ativo **%s** adicionado com sucesso à sua carteira!", ticker));
+        } catch (Exception e) { handleGenericError(chatId, e); }
+    }
+
+    private void executeRemoveAsset(long chatId, String ticker) {
+        if (ticker == null) { sendMessage(chatId, "Não consegui identificar o ativo a ser removido."); return; }
+        try {
+            removeAssetFromPortfolioUseCase.execute(new RemoveAssetFromPortfolioUseCase.Input(chatId, ticker));
+            sendMessage(chatId, String.format("🗑️ Ativo **%s** removido com sucesso da sua carteira!", ticker));
+        } catch (Exception e) { handleGenericError(chatId, e); }
+    }
+
+    private void handleGenericError(long chatId, Exception e) {
+        if (e instanceof NoSuchElementException) {
+            sendMessage(chatId, "Não encontrei as informações solicitadas.");
+        } else {
+            sendMessage(chatId, "Ocorreu um erro inesperado. Por favor, tente novamente.");
         }
+        e.printStackTrace();
     }
 
     private void sendMessage(long chatId, String text) {
@@ -95,38 +124,9 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
         message.setChatId(chatId);
         message.setText(text);
         message.setParseMode("Markdown");
-        try {
-            execute(message);
-        } catch (TelegramApiException e) {
-            System.err.println("Erro ao enviar mensagem para o chat ID " + chatId);
-            e.printStackTrace();
-        }
-    }
-
-    private void executeViewPortfolio(long chatId) {
-        try {
-            var input = new ViewPortfolioUseCase.Input(chatId);
-            Portfolio portfolio = viewPortfolioUseCase.execute(input);
-
-            StringBuilder response = new StringBuilder("💼 **Sua Carteira de Investimentos**\n\n");
-
-            if (portfolio.getAssets().isEmpty()) {
-                response.append("Você ainda não possui ativos na sua carteira. Que tal começar a adicionar alguns?");
-            } else {
-                response.append("Aqui estão seus ativos:\n");
-                portfolio.getAssets().forEach(asset -> {
-                    response.append(String.format("- %s: %d unidades\n", asset.ticker(), asset.quantity()));
-                });
-            }
-            sendMessage(chatId, response.toString());
-        } catch (Exception e) {
-            sendMessage(chatId, "Ocorreu um erro ao buscar sua carteira. Por favor, tente novamente.");
-            e.printStackTrace();
-        }
+        try { execute(message); } catch (TelegramApiException e) { e.printStackTrace(); }
     }
 
     @Override
-    public String getBotUsername() {
-        return this.botUsername;
-    }
+    public String getBotUsername() { return this.botUsername; }
 }
