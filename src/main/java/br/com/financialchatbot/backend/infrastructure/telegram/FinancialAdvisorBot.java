@@ -8,6 +8,8 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import br.com.financialchatbot.backend.application.usecases.CreateOrUpdateUserUseCase;
+
 
 import java.util.NoSuchElementException;
 
@@ -17,22 +19,30 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
     private final String botUsername;
     private final GetAssetInformationUseCase getAssetInformationUseCase;
     private final NluGateway nluGateway;
+    private final CreateOrUpdateUserUseCase createOrUpdateUserUseCase;
 
     public FinancialAdvisorBot(@Value("${telegram.bot.token}") String botToken,
                                @Value("${telegram.bot.username}") String botUsername,
                                GetAssetInformationUseCase getAssetInformationUseCase,
+                               CreateOrUpdateUserUseCase createOrUpdateUserUseCase,
                                NluGateway nluGateway) {
         super(botToken);
         this.botUsername = botUsername;
         this.getAssetInformationUseCase = getAssetInformationUseCase;
+        this.createOrUpdateUserUseCase = createOrUpdateUserUseCase;
         this.nluGateway = nluGateway;
     }
 
     @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
-            String messageText = update.getMessage().getText().trim();
-            long chatId = update.getMessage().getChatId();
+            var message = update.getMessage();
+            String messageText = message.getText().trim();
+            long chatId = message.getChatId();
+            String firstName = message.getFrom().getFirstName();
+
+            var userInput = new CreateOrUpdateUserUseCase.Input(chatId, firstName);
+            createOrUpdateUserUseCase.execute(userInput);
 
             nluGateway.interpret(messageText).ifPresentOrElse(intent -> {
                 if ("get_asset_information".equals(intent.name())) {
@@ -86,11 +96,6 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
         }
     }
 
-    /**
-     * Método obrigatório que retorna o username do bot.
-     *
-     * @return O username do bot.
-     */
     @Override
     public String getBotUsername() {
         return this.botUsername;
