@@ -3,6 +3,7 @@ package br.com.financialchatbot.backend.infrastructure.gateways;
 import br.com.financialchatbot.backend.domain.gateways.NluGateway;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -16,11 +17,18 @@ public class FakeNluGateway implements NluGateway {
     @Override
     public Optional<Intent> interpret(String text) {
         System.out.println("[NLU FAKE] Interpretando texto: " + text);
-        Matcher matcher = TICKER_PATTERN.matcher(text.toUpperCase());
+        String upperCaseText = text.toUpperCase();
+        Matcher tickerMatcher = TICKER_PATTERN.matcher(upperCaseText);
 
-        if (matcher.find()) {
-            String ticker = matcher.group(1);
+        if (tickerMatcher.find()) {
+            String ticker = tickerMatcher.group(1);
             Intent intent = new Intent("get_asset_information", Map.of("ticker", ticker));
+            System.out.println("[NLU FAKE] Intenção encontrada: " + intent);
+            return Optional.of(intent);
+        }
+
+        if (upperCaseText.contains("PORTFOLIO") || upperCaseText.contains("CARTEIRA")) {
+            Intent intent = new Intent("view_portfolio", Collections.emptyMap());
             System.out.println("[NLU FAKE] Intenção encontrada: " + intent);
             return Optional.of(intent);
         }

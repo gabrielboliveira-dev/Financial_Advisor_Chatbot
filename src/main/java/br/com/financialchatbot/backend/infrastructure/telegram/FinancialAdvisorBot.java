@@ -9,6 +9,8 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import br.com.financialchatbot.backend.application.usecases.CreateOrUpdateUserUseCase;
+import br.com.financialchatbot.backend.application.usecases.ViewPortfolioUseCase;
+import br.com.financialchatbot.backend.domain.entities.Portfolio;
 
 
 import java.util.NoSuchElementException;
@@ -20,17 +22,20 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
     private final GetAssetInformationUseCase getAssetInformationUseCase;
     private final NluGateway nluGateway;
     private final CreateOrUpdateUserUseCase createOrUpdateUserUseCase;
+    private final ViewPortfolioUseCase viewPortfolioUseCase;
 
     public FinancialAdvisorBot(@Value("${telegram.bot.token}") String botToken,
                                @Value("${telegram.bot.username}") String botUsername,
                                GetAssetInformationUseCase getAssetInformationUseCase,
+                               NluGateway nluGateway,
                                CreateOrUpdateUserUseCase createOrUpdateUserUseCase,
-                               NluGateway nluGateway) {
+                               ViewPortfolioUseCase viewPortfolioUseCase) {
         super(botToken);
         this.botUsername = botUsername;
         this.getAssetInformationUseCase = getAssetInformationUseCase;
-        this.createOrUpdateUserUseCase = createOrUpdateUserUseCase;
         this.nluGateway = nluGateway;
+        this.createOrUpdateUserUseCase = createOrUpdateUserUseCase;
+        this.viewPortfolioUseCase = viewPortfolioUseCase;
     }
 
     @Override
@@ -52,6 +57,8 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
                     } else {
                         sendMessage(chatId, "Entendi que você quer saber sobre um ativo, mas não identifiquei o código (ticker). Tente enviar algo como 'preço da PETR4'.");
                     }
+                } else if ("view_portfolio".equals(intent.name())) {
+                    executeViewPortfolio(chatId);
                 } else {
                     sendMessage(chatId, "Desculpe, ainda não sei como processar essa solicitação.");
                 }
@@ -92,6 +99,28 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
             execute(message);
         } catch (TelegramApiException e) {
             System.err.println("Erro ao enviar mensagem para o chat ID " + chatId);
+            e.printStackTrace();
+        }
+    }
+
+    private void executeViewPortfolio(long chatId) {
+        try {
+            var input = new ViewPortfolioUseCase.Input(chatId);
+            Portfolio portfolio = viewPortfolioUseCase.execute(input);
+
+            StringBuilder response = new StringBuilder("💼 **Sua Carteira de Investimentos**\n\n");
+
+            if (portfolio.getAssets().isEmpty()) {
+                response.append("Você ainda não possui ativos na sua carteira. Que tal começar a adicionar alguns?");
+            } else {
+                response.append("Aqui estão seus ativos:\n");
+                portfolio.getAssets().forEach(asset -> {
+                    response.append(String.format("- %s: %d unidades\n", asset.ticker(), asset.quantity()));
+                });
+            }
+            sendMessage(chatId, response.toString());
+        } catch (Exception e) {
+            sendMessage(chatId, "Ocorreu um erro ao buscar sua carteira. Por favor, tente novamente.");
             e.printStackTrace();
         }
     }
