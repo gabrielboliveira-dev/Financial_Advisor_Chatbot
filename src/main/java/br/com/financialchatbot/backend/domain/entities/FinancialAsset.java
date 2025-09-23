@@ -1,30 +1,19 @@
 package br.com.financialchatbot.backend.domain.entities;
 
-public class FinancialAsset {
+import java.math.BigDecimal;
 
-    private final String tickerSymbol;
-    private final String companyName;
-    private final String market;
+public record FinancialAsset(
+        String tickerSymbol,
+        String companyName,
+        String market,
+        BigDecimal currentPrice
+    ) {
 
-    public FinancialAsset(String tickerSymbol, String companyName, String market) {
-        if (tickerSymbol == null || tickerSymbol.trim().isEmpty()) {
-            throw new IllegalArgumentException("O símbolo do ativo (ticker) não pode ser nulo ou vazio.");
-        }
+    public FinancialAsset(String tickerSymbol, String companyName, String market, BigDecimal currentPrice) {
 
         this.tickerSymbol = tickerSymbol.trim().toUpperCase();
         this.companyName = companyName;
         this.market = market;
-    }
-
-    public String getTickerSymbol() {
-        return tickerSymbol;
-    }
-
-    public String getCompanyName() {
-        return companyName;
-    }
-
-    public String getMarket() {
-        return market;
+        this.currentPrice = (currentPrice != null) ? currentPrice : BigDecimal.ZERO;
     }
 }
