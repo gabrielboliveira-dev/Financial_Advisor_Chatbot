@@ -10,9 +10,16 @@ services:
       - DB_URL=${DB_URL}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
+      - ANALYSIS_SERVICE_URL=http://analysis-service:5001
     depends_on:
       - db
+      - analysis-service
 
+  analysis-service:
+    build: ./analysis-service
+    container_name: analysis_service
+    ports:
+      - "5001:5001"
 
   db:
     image: postgres:15
