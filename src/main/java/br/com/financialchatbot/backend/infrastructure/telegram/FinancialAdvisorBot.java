@@ -9,6 +9,7 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import br.com.financialchatbot.backend.application.usecases.AnalyzePortfolioDiversificationUseCase;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -25,6 +26,7 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
     private final AddAssetToPortfolioUseCase addAssetToPortfolioUseCase;
     private final RemoveAssetFromPortfolioUseCase removeAssetFromPortfolioUseCase;
     private final CalculatePortfolioPerformanceUseCase calculatePortfolioPerformanceUseCase;
+    private final AnalyzePortfolioDiversificationUseCase analyzePortfolioDiversificationUseCase;
 
     public FinancialAdvisorBot(@Value("${telegram.bot.token}") String botToken,
                                @Value("${telegram.bot.username}") String botUsername,
@@ -34,7 +36,8 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
                                ViewPortfolioUseCase viewPortfolioUseCase,
                                AddAssetToPortfolioUseCase addAssetToPortfolioUseCase,
                                RemoveAssetFromPortfolioUseCase removeAssetFromPortfolioUseCase,
-                               CalculatePortfolioPerformanceUseCase calculatePortfolioPerformanceUseCase) {
+                               CalculatePortfolioPerformanceUseCase calculatePortfolioPerformanceUseCase,
+                               AnalyzePortfolioDiversificationUseCase analyzePortfolioDiversificationUseCase) {
         super(botToken);
         this.botUsername = botUsername;
         this.nluGateway = nluGateway;
@@ -44,6 +47,7 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
         this.addAssetToPortfolioUseCase = addAssetToPortfolioUseCase;
         this.removeAssetFromPortfolioUseCase = removeAssetFromPortfolioUseCase;
         this.calculatePortfolioPerformanceUseCase = calculatePortfolioPerformanceUseCase;
+        this.analyzePortfolioDiversificationUseCase = analyzePortfolioDiversificationUseCase;
     }
 
     @Override
@@ -68,6 +72,7 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
                     case "add_asset" -> executeAddAsset(chatId, intent.entities());
                     case "remove_asset" -> executeRemoveAsset(chatId, intent.entities().get("ticker"));
                     case "calculate_performance" -> executeCalculatePerformance(chatId);
+                    case "analyze_diversification" -> executeAnalyzeDiversification(chatId);
                     default -> sendMessage(chatId, "Desculpe, ainda não sei como processar essa solicitação.");
                 }
             }, () -> sendMessage(chatId, "Desculpe, não entendi o que você quis dizer."));
@@ -150,6 +155,25 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
                     returnEmoji, performance.returnPercentage()
             );
             sendMessage(chatId, responseText);
+        } catch (Exception e) {
+            handleGenericError(chatId, e);
+        }
+    }
+
+    private void executeAnalyzeDiversification(long chatId) {
+        try {
+            var output = analyzePortfolioDiversificationUseCase.execute(new AnalyzePortfolioDiversificationUseCase.Input(chatId));
+
+            StringBuilder response = new StringBuilder("📊 **Análise de Diversificação por Setor**\n\n");
+
+            if (output.diversificationBySector().isEmpty()) {
+                response.append("Sua carteira está vazia ou não foi possível analisar seus ativos.");
+            } else {
+                output.diversificationBySector().forEach((sector, percentage) -> {
+                    response.append(String.format("- **%s:** %.2f%%\n", sector, percentage));
+                });
+            }
+            sendMessage(chatId, response.toString());
         } catch (Exception e) {
             handleGenericError(chatId, e);
         }
