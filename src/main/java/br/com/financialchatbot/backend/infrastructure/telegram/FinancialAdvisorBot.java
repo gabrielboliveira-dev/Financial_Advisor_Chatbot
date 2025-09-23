@@ -24,6 +24,7 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
     private final ViewPortfolioUseCase viewPortfolioUseCase;
     private final AddAssetToPortfolioUseCase addAssetToPortfolioUseCase;
     private final RemoveAssetFromPortfolioUseCase removeAssetFromPortfolioUseCase;
+    private final CalculatePortfolioPerformanceUseCase calculatePortfolioPerformanceUseCase;
 
     public FinancialAdvisorBot(@Value("${telegram.bot.token}") String botToken,
                                @Value("${telegram.bot.username}") String botUsername,
@@ -32,7 +33,8 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
                                GetAssetInformationUseCase getAssetInformationUseCase,
                                ViewPortfolioUseCase viewPortfolioUseCase,
                                AddAssetToPortfolioUseCase addAssetToPortfolioUseCase,
-                               RemoveAssetFromPortfolioUseCase removeAssetFromPortfolioUseCase) {
+                               RemoveAssetFromPortfolioUseCase removeAssetFromPortfolioUseCase,
+                               CalculatePortfolioPerformanceUseCase calculatePortfolioPerformanceUseCase) {
         super(botToken);
         this.botUsername = botUsername;
         this.nluGateway = nluGateway;
@@ -41,6 +43,7 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
         this.viewPortfolioUseCase = viewPortfolioUseCase;
         this.addAssetToPortfolioUseCase = addAssetToPortfolioUseCase;
         this.removeAssetFromPortfolioUseCase = removeAssetFromPortfolioUseCase;
+        this.calculatePortfolioPerformanceUseCase = calculatePortfolioPerformanceUseCase;
     }
 
     @Override
@@ -64,6 +67,7 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
                     case "view_portfolio" -> executeViewPortfolio(chatId);
                     case "add_asset" -> executeAddAsset(chatId, intent.entities());
                     case "remove_asset" -> executeRemoveAsset(chatId, intent.entities().get("ticker"));
+                    case "calculate_performance" -> executeCalculatePerformance(chatId);
                     default -> sendMessage(chatId, "Desculpe, ainda não sei como processar essa solicitação.");
                 }
             }, () -> sendMessage(chatId, "Desculpe, não entendi o que você quis dizer."));
@@ -125,6 +129,30 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
         message.setText(text);
         message.setParseMode("Markdown");
         try { execute(message); } catch (TelegramApiException e) { e.printStackTrace(); }
+    }
+
+    private void executeCalculatePerformance(long chatId) {
+        try {
+            var performance = calculatePortfolioPerformanceUseCase.execute(new CalculatePortfolioPerformanceUseCase.Input(chatId));
+
+            String profitEmoji = performance.profitOrLoss().compareTo(BigDecimal.ZERO) >= 0 ? "🟢" : "🔴";
+            String returnEmoji = performance.returnPercentage().compareTo(BigDecimal.ZERO) >= 0 ? "📈" : "📉";
+
+            String responseText = String.format(
+                    "📊 **Performance da Carteira**\n\n" +
+                            "💰 **Valor Investido:** R$ %.2f\n" +
+                            "🏦 **Valor Atual:** R$ %.2f\n" +
+                            "%s **Lucro/Prejuízo:** R$ %.2f\n" +
+                            "%s **Rentabilidade:** %.2f%%",
+                    performance.totalInvested(),
+                    performance.currentValue(),
+                    profitEmoji, performance.profitOrLoss(),
+                    returnEmoji, performance.returnPercentage()
+            );
+            sendMessage(chatId, responseText);
+        } catch (Exception e) {
+            handleGenericError(chatId, e);
+        }
     }
 
     @Override

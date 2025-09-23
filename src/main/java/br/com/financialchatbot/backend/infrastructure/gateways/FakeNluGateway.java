@@ -28,7 +28,11 @@ public class FakeNluGateway implements NluGateway {
             entities.put("ticker", addMatcher.group(2));
             entities.put("price", addMatcher.group(3).replace(",", "."));
             return Optional.of(new Intent("add_asset", entities));
+
+        }if (upperCaseText.contains("PERFORMANCE") || upperCaseText.contains("DESEMPENHO") || upperCaseText.contains("LUCRO")) {
+            return Optional.of(new Intent("calculate_performance", Map.of()));
         }
+
 
         Matcher removeMatcher = REMOVE_ASSET_PATTERN.matcher(upperCaseText);
         if (removeMatcher.find()) {
