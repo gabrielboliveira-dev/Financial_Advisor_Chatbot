@@ -37,6 +37,9 @@ public class FakeNluGateway implements NluGateway {
             return Optional.of(new Intent("analyze_diversification", Map.of()));
         }
 
+        if (upperCaseText.contains("SUGESTAO") || upperCaseText.contains("RECOMENDA") || upperCaseText.contains("SUGERIR")) {
+            return Optional.of(new Intent("suggest_assets", Map.of()));
+        }
 
         Matcher removeMatcher = REMOVE_ASSET_PATTERN.matcher(upperCaseText);
         if (removeMatcher.find()) {

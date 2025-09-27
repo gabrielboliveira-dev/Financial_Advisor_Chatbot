@@ -11,6 +11,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import br.com.financialchatbot.backend.application.usecases.AnalyzePortfolioDiversificationUseCase;
 import br.com.financialchatbot.backend.infrastructure.cache.QuizStateCache;
+import br.com.financialchatbot.backend.application.usecases.SuggestAssetUseCase;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -30,6 +31,7 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
     private final AnalyzePortfolioDiversificationUseCase analyzePortfolioDiversificationUseCase;
     private final QuizStateCache quizStateCache;
     private final ProcessQuizResponseUseCase processQuizResponseUseCase;
+    private final SuggestAssetUseCase suggestAssetUseCase;
 
     public FinancialAdvisorBot(@Value("${telegram.bot.token}") String botToken,
                                @Value("${telegram.bot.username}") String botUsername,
@@ -42,7 +44,8 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
                                CalculatePortfolioPerformanceUseCase calculatePortfolioPerformanceUseCase,
                                AnalyzePortfolioDiversificationUseCase analyzePortfolioDiversificationUseCase,
                                QuizStateCache quizStateCache,
-                               ProcessQuizResponseUseCase processQuizResponseUseCase) {
+                               ProcessQuizResponseUseCase processQuizResponseUseCase,
+                               SuggestAssetUseCase suggestAssetUseCase) {
         super(botToken);
         this.botUsername = botUsername;
         this.nluGateway = nluGateway;
@@ -55,6 +58,7 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
         this.analyzePortfolioDiversificationUseCase = analyzePortfolioDiversificationUseCase;
         this.quizStateCache = quizStateCache;
         this.processQuizResponseUseCase = processQuizResponseUseCase;
+        this.suggestAssetUseCase = suggestAssetUseCase;
     }
 
     @Override
@@ -86,6 +90,8 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
                     case "remove_asset" -> executeRemoveAsset(chatId, intent.entities().get("ticker"));
                     case "calculate_performance" -> executeCalculatePerformance(chatId);
                     case "analyze_diversification" -> executeAnalyzeDiversification(chatId);
+                    case "start_risk_profile_quiz" -> executeStartQuiz(chatId);
+                    case "suggest_assets" -> executeSuggestAssets(chatId);
                     default -> sendMessage(chatId, "Desculpe, ainda não sei como processar essa solicitação.");
                 }
             }, () -> sendMessage(chatId, "Desculpe, não entendi o que você quis dizer."));
@@ -195,6 +201,27 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
     private void executeStartQuiz(long chatId) {
         var output = processQuizResponseUseCase.execute(chatId, null); // Inicia o quiz
         sendMessage(chatId, output.responseText());
+    }
+
+    private void executeSuggestAssets(long chatId) {
+        try {
+            var output = suggestAssetUseCase.execute(new SuggestAssetUseCase.Input(chatId));
+
+            if (!output.profileDefined()) {
+                sendMessage(chatId, "Para que eu possa te dar sugestões, primeiro preciso conhecer seu perfil de investidor. Diga 'fazer quiz' para começar!");
+                return;
+            }
+
+            StringBuilder response = new StringBuilder("💡 **Com base no seu perfil, aqui estão algumas sugestões de ativos para estudo:**\n\n");
+            output.suggestedAssets().forEach(asset -> {
+                response.append("- ").append(asset).append("\n");
+            });
+            response.append("\n*Lembre-se: isto não é uma recomendação de compra, mas sim um ponto de partida para suas próprias análises.*");
+
+            sendMessage(chatId, response.toString());
+        } catch (Exception e) {
+            handleGenericError(chatId, e);
+        }
     }
 
     @Override
