@@ -10,6 +10,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import br.com.financialchatbot.backend.application.usecases.AnalyzePortfolioDiversificationUseCase;
+import br.com.financialchatbot.backend.infrastructure.cache.QuizStateCache;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -27,6 +28,8 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
     private final RemoveAssetFromPortfolioUseCase removeAssetFromPortfolioUseCase;
     private final CalculatePortfolioPerformanceUseCase calculatePortfolioPerformanceUseCase;
     private final AnalyzePortfolioDiversificationUseCase analyzePortfolioDiversificationUseCase;
+    private final QuizStateCache quizStateCache;
+    private final ProcessQuizResponseUseCase processQuizResponseUseCase;
 
     public FinancialAdvisorBot(@Value("${telegram.bot.token}") String botToken,
                                @Value("${telegram.bot.username}") String botUsername,
@@ -37,7 +40,9 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
                                AddAssetToPortfolioUseCase addAssetToPortfolioUseCase,
                                RemoveAssetFromPortfolioUseCase removeAssetFromPortfolioUseCase,
                                CalculatePortfolioPerformanceUseCase calculatePortfolioPerformanceUseCase,
-                               AnalyzePortfolioDiversificationUseCase analyzePortfolioDiversificationUseCase) {
+                               AnalyzePortfolioDiversificationUseCase analyzePortfolioDiversificationUseCase,
+                               QuizStateCache quizStateCache,
+                               ProcessQuizResponseUseCase processQuizResponseUseCase) {
         super(botToken);
         this.botUsername = botUsername;
         this.nluGateway = nluGateway;
@@ -48,6 +53,8 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
         this.removeAssetFromPortfolioUseCase = removeAssetFromPortfolioUseCase;
         this.calculatePortfolioPerformanceUseCase = calculatePortfolioPerformanceUseCase;
         this.analyzePortfolioDiversificationUseCase = analyzePortfolioDiversificationUseCase;
+        this.quizStateCache = quizStateCache;
+        this.processQuizResponseUseCase = processQuizResponseUseCase;
     }
 
     @Override
@@ -57,6 +64,12 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
             String messageText = message.getText().trim();
             long chatId = message.getChatId();
             String firstName = message.getFrom().getFirstName();
+
+            if (quizStateCache.findByChatId(chatId).isPresent()) {
+                var output = processQuizResponseUseCase.execute(chatId, messageText);
+                sendMessage(chatId, output.responseText());
+                return;
+            }
 
             try {
                 createOrUpdateUserUseCase.execute(new CreateOrUpdateUserUseCase.Input(chatId, firstName));
@@ -177,6 +190,11 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
         } catch (Exception e) {
             handleGenericError(chatId, e);
         }
+    }
+
+    private void executeStartQuiz(long chatId) {
+        var output = processQuizResponseUseCase.execute(chatId, null); // Inicia o quiz
+        sendMessage(chatId, output.responseText());
     }
 
     @Override
