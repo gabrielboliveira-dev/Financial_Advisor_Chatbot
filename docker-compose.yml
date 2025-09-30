@@ -1,21 +1,22 @@
 services:
-
   backend:
-    build: src/main/java/br/com/financialchatbot
+    build: ./backend
     container_name: backend_service
     ports:
       - "8080:8080"
     environment:
-      - DB_URL=jdbc:postgresql://db:5432/financialdb
-      - DB_USER=gabrielboliveira
-      - DB_PASSWORD=SherlockHolmes.221
-      - ANALYSIS_SERVICE_URL=http://analysis-service:5001
+      - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - DB_URL=${DB_URL}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - ANALYSIS_SERVICE_URL=${ANALYSIS_SERVICE_URL}
     depends_on:
       - db
       - analysis-service
 
   analysis-service:
-    build: src/main/java/br/com/financialchatbot/analysis-service
+    build: ./analysis-service
     container_name: analysis_service
     ports:
       - "5001:5001"
@@ -27,8 +28,8 @@ services:
       - "5432:5432"
     environment:
       - POSTGRES_DB=financialdb
-      - POSTGRES_USER=gabrielboliveira
-      - POSTGRES_PASSWORD=SherlockHolmes.221
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
