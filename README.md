@@ -1,94 +1,114 @@
-# Financial Advisor Chatbot - Seu Assistente Financeiro Pessoal com IA
+# Assistente Financeiro Pessoal com IA
 
-## Visão Geral
+## 🎯 Visão Geral
 
 O mercado financeiro é complexo e intimidador para a maioria das pessoas. A falta de acesso a orientação de qualidade e ferramentas intuitivas cria uma barreira significativa para quem deseja investir com segurança e inteligência.
 
-Este projeto nasceu para resolver essa dor. Nosso objetivo é construir o **assistente de investimentos pessoal mais completo e acessível do mercado**, um chatbot com IA que descomplica as finanças e empodera o usuário a tomar decisões mais inteligentes.
+Este projeto nasceu para resolver essa dor. O objetivo foi construir um **assistente de investimentos pessoal, completo e acessível**, um chatbot com IA que descomplica as finanças e capacita o utilizador a tomar decisões mais inteligentes.
 
-Utilizando uma arquitetura de microsserviços robusta e seguindo os mais altos padrões de engenharia de software (Arquitetura Limpa, Código Limpo, SOLID), este assistente vai além de simplesmente fornecer dados. Ele oferece análise, gerenciamento de portfólio e insights personalizados, tudo através de uma conversa intuitiva no Telegram.
+Utilizando uma arquitetura de microsserviços robusta e seguindo os mais altos padrões de engenharia de software (Arquitetura Limpa, Código Limpo, SOLID), este assistente vai além de simplesmente fornecer dados. Ele oferece análise de portfólio, gestão de carteira e insights personalizados, tudo através de uma conversa intuitiva no Telegram.
 
-## Principais Funcionalidades
+## 🤖 Como Usar o Bot
 
-Nossa visão é construir um assistente com as seguintes capacidades:
+Depois de iniciar os serviços com o Docker Compose, encontre o seu bot no Telegram e comece a conversa. Aqui estão alguns comandos que ele entende:
 
-*  **Análise de Ativos em Tempo Real:** Fornece cotações, dados históricos e indicadores fundamentalistas de ações, FIIs e outros ativos.
-*  **Gerenciamento de Portfólio:** Permite que o usuário cadastre e acompanhe o desempenho consolidado da sua carteira de investimentos.
-*  **Análise de Perfil de Risco:** Um questionário interativo para entender a tolerância ao risco do usuário (Conservador, Moderado, Arrojado).
-*  **Insights e Análise de Carteira:** Avalia a diversificação do portfólio por setor e tipo de ativo, oferecendo sugestões para otimização.
-*  **Recomendações Personalizadas (Roadmap Futuro):** Sugere ativos e estratégias de alocação com base no perfil de risco e nos objetivos do usuário.
-*  **Inteligência de Mercado:** Busca e resume notícias e fatos relevantes que podem impactar os ativos do usuário.
+| Comando / Frase de Exemplo | Ação do Bot |
+| :--- | :--- |
+| `fazer quiz de perfil` | Inicia o questionário interativo para definir o seu perfil de investidor. |
+| `me dê uma sugestão` | Sugere ativos para estudo com base no seu perfil de risco definido. |
+| `adicionar 100 PETR4 a 38.50` | Adiciona um ativo à sua carteira (quantidade, ticker, preço médio). |
+| `ver minha carteira` | Mostra um resumo de todos os ativos que você possui. |
+| `remover PETR4` | Remove completamente um ativo da sua carteira. |
+| `qual o meu desempenho?` | Calcula e exibe a performance atual da sua carteira (lucro/prejuízo, etc.). |
+| `analisar diversificação` | Gera e envia uma imagem com um gráfico de pizza da sua diversificação por setor. |
+| `cotação da PETR4` | Mostra as informações e o preço atual de um ativo específico. |
 
-## Princípios de Design
+## ✨ Principais Funcionalidades (Versão 1.0)
 
-A excelência técnica é o pilar deste projeto.
+* **Análise de Ativos em Tempo Real:** Fornece cotações e dados de ativos via API externa.
+* **Gestão de Portfólio:** Permite que o utilizador adicione, visualize e remova ativos da sua carteira pessoal.
+* **Cálculo de Preço Médio:** Atualiza automaticamente o preço médio ponderado ao adicionar mais unidades de um ativo existente.
+* **Análise de Performance:** Calcula o valor total investido, o valor atual, o lucro/prejuízo e a rentabilidade percentual da carteira.
+* **Análise de Diversificação Visual:** Comunica-se com um microsserviço Python para gerar e exibir um gráfico de pizza da diversificação da carteira por setor.
+* **Análise de Perfil de Risco (Quiz):** Conduz um questionário de múltiplos passos para determinar o perfil de investidor do utilizador (Conservador, Moderado, Arrojado).
+* **Sugestão de Ativos:** Oferece sugestões básicas de ativos para estudo, personalizadas de acordo com o perfil de risco do utilizador.
 
-* **Arquitetura Limpa (Clean Architecture):** A lógica de negócios é 100% independente de frameworks, bancos de dados ou APIs. Isso garante um sistema testável, flexível e de fácil manutenção.
-* **Código Limpo (Clean Code):** Escrevemos código para seres humanos. Clareza, simplicidade e expressividade são prioridades.
-* **SOLID:** Os cinco princípios do design orientado a objetos são seguidos à risca para criar um software desacoplado, coeso e extensível.
+## 📐 Princípios de Design
 
-## Arquitetura do Sistema
+* **Arquitetura Limpa (Clean Architecture):** A lógica de negócios é 100% independente de frameworks, bases de dados ou APIs, garantindo um sistema testável e flexível.
+* **Código Limpo (Clean Code):** O código foi escrito para ser legível, simples e expressivo, priorizando a manutenibilidade.
+* **SOLID:** Os cinco princípios do design orientado a objetos foram a base para criar um software desacoplado, coeso e extensível.
 
-O sistema é projetado como uma arquitetura de **microsserviços** para garantir escalabilidade e separação de responsabilidades.
+## 🏗️ Arquitetura do Sistema
 
-1.  **Interface (Telegram):** O usuário interage com o bot. As mensagens são recebidas pelo serviço de Backend.
-2.  **Backend (Java / Spring Boot):** O coração da orquestração.
-    * **Camada de Infraestrutura:** Recebe as mensagens do Telegram (`TelegramController`), se comunica com o banco de dados (`PortfolioDatabaseGateway`) e com serviços externos (`FinancialDataGateway`, `NluGateway`).
-    * **Camada de Aplicação:** Orquestra os fluxos de negócio através de **Casos de Uso** (ex: `AnalyzePortfolioUseCase`).
-    * **Camada de Domínio:** Contém as entidades e regras de negócio mais puras (ex: `Portfolio`, `FinancialAsset`, `User`).
-3.  **Serviço de IA (Python / Rasa):** Responsável pela Inteligência.
-    * **NLU (Natural Language Understanding):** Recebe textos do usuário (ex: "como está minha carteira hoje?") e extrai a intenção (`visualizar_portfolio`) e as entidades.
-    * **Análise de Dados:** Utiliza bibliotecas como Pandas e NumPy para realizar cálculos complexos sobre dados de portfólio e de mercado.
-    * **Visualização:** Gera gráficos e tabelas com Matplotlib para serem enviados como imagem ao usuário.
+O sistema é projetado como uma arquitetura de **microsserviços** orquestrada pelo Docker Compose.
 
-## Tecnologias Utilizadas
+1.  **Interface (Telegram):** O utilizador interage com o bot.
+2.  **Backend (Java / Spring Boot):** O "cérebro" da aplicação. Recebe as mensagens, orquestra os casos de uso, gere a persistência dos dados e comunica-se com outros serviços.
+3.  **Serviço de Análise (Python / Flask):** O "analista de dados". Recebe pedidos do backend para realizar análises complexas (como a diversificação) e gerar visualizações de dados (gráficos), utilizando bibliotecas como Pandas e Matplotlib.
+4.  **Base de Dados (PostgreSQL):** Armazena de forma persistente os dados dos utilizadores e dos seus portfólios.
 
-| Área                    | Tecnologia                                                                                             |
-| ----------------------- | ------------------------------------------------------------------------------------------------------ |
-| **Backend** | Java, Spring Boot, Spring WebClient, Spring Data JPA                                                   |
-| **Serviço de IA** | Python, Rasa (NLU), Pandas, NumPy, Matplotlib, yfinance                                                |
-| **Persistência** | PostgreSQL (ou outro banco de dados relacional)                                                        |
-| **Infraestrutura** | Docker, Docker Compose                                                                                 |
-| **Mensageria** | Telegram Bot API                                                                                       |
+## 🛠️ Tecnologias Utilizadas
 
-## Como Começar
+| Área | Tecnologia |
+| :--- | :--- |
+| **Backend** | Java 17, Spring Boot, Spring Data JPA, Spring WebFlux (`WebClient`) |
+| **Serviço de IA/Análise** | Python, Flask, Pandas, Matplotlib |
+| **Persistência** | PostgreSQL |
+| **Infraestrutura** | Docker, Docker Compose |
+| **Mensageria** | Telegram Bot API |
+
+## 🚀 Como Começar
 
 **Pré-requisitos:**
 * Git
 * Docker e Docker Compose
-* Java (JDK 17 ou superior)
 
 **Passos:**
 
 1.  **Clone o repositório:**
     ```bash
-    git clone [https://github.com/seu-usuario/financial-advisor-chatbot.git](https://github.com/seu-usuario/financial-advisor-chatbot.git)
-    cd financial-advisor-chatbot
+    git clone [https://github.com/gabrielboliveira-dev/Financial_Advisor_Chatbot.git](https://github.com/gabrielboliveira-dev/Financial_Advisor_Chatbot.git)
+    cd Financial_Advisor_Chatbot
     ```
 
-2.  **Configure as variáveis de ambiente:**
-    Crie um arquivo `.env` na raiz do projeto com o seguinte conteúdo:
+2.  **Verifique a Estrutura de Pastas:**
+    Certifique-se de que o projeto tem as pastas `backend/` e `analysis-service/` na raiz, cada uma contendo o seu respetivo `Dockerfile`.
+
+3.  **Configure as Variáveis de Ambiente:**
+    Na pasta raiz do projeto, crie um ficheiro chamado `.env` e cole o seguinte conteúdo, substituindo os seus dados:
     ```env
     # Credenciais do Telegram Bot
     TELEGRAM_BOT_TOKEN=SEU_TOKEN_AQUI
     TELEGRAM_BOT_USERNAME=SEU_USERNAME_DO_BOT
 
-    # Configuração do Banco de Dados (Exemplo com PostgreSQL)
+    # Configuração da Base de Dados
     DB_URL=jdbc:postgresql://db:5432/financialdb
     DB_USER=admin
     DB_PASSWORD=secret
+
+    # URL do Serviço de Análise (Python)
+    ANALYSIS_SERVICE_URL=http://analysis-service:5001
     ```
 
-3.  **Inicie os serviços com Docker Compose:**
+4.  **Inicie todos os serviços:**
+    A partir da pasta raiz do projeto, execute o comando:
     ```bash
     docker-compose up --build
     ```
-    Este comando irá construir as imagens e iniciar todos os contêineres necessários (Backend, Serviço de IA, Banco de Dados).
+    Aguarde até que os logs indiquem que os três serviços (`db`, `analysis-service`, `backend`) estão em execução e prontos.
 
-## Como Contribuir
+## 🗺️ Roteiro do Projeto (Versão 1.0)
 
-Este é um projeto de aprendizado e desenvolvimento. Contribuições são bem-vindas! Por favor, abra uma *issue* para discutir novas ideias ou relate um bug.
+* [✔️] **Fase 1: Fundação e Dados de Ativos (Concluída)**
+* [✔️] **Fase 2: Contexto do Usuário & Portfólio (Concluída)**
+* [✔️] **Fase 3: Análise e Inteligência (Concluída)**
+* [✔️] **Fase 4: Personalização e Recomendações (Concluída)**
 
-## Licença
+## 🤝 Como Contribuir
 
-Este projeto é distribuído sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+Este projeto é um portfólio e um projeto de aprendizado. Novas ideias e contribuições são bem-vindas! Por favor, abra uma *issue* para discutir o que você gostaria de mudar ou adicionar.
+
+## 📄 Licença
+
+Este projeto é distribuído sob a licença MIT.
