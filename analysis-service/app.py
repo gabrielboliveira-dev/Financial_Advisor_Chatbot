@@ -2,15 +2,25 @@ from flask import Flask, request, jsonify, send_file
 import pandas as pd
 import matplotlib.pyplot as plt
 import io
+import json
+import os
 
 app = Flask(__name__)
 
-# Dicionário FAKE para mapear tickers a setores
-TICKER_SECTOR_MAP = {
-    "PETR4": "Petróleo e Gás", "VALE3": "Mineração", "ITUB4": "Financeiro",
-    "BBDC4": "Financeiro", "MGLU3": "Varejo", "LREN3": "Varejo",
-    "WEGE3": "Industrial", "SUZB3": "Papel e Celulose"
-}
+# Carrega o dicionário de setores a partir do arquivo JSON
+def load_sector_map():
+    config_path = os.path.join(os.path.dirname(__file__), 'sectors.json')
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print(f"Aviso: Arquivo {config_path} não encontrado. Usando dicionário vazio.")
+        return {}
+    except json.JSONDecodeError:
+        print(f"Aviso: Erro ao decodificar {config_path}. O arquivo contém JSON inválido.")
+        return {}
+
+TICKER_SECTOR_MAP = load_sector_map()
 
 @app.route('/analyze/diversification', methods=['POST'])
 def analyze_diversification():
@@ -22,6 +32,7 @@ def analyze_diversification():
 
     # 1. Usa Pandas para processar os dados
     df = pd.DataFrame(assets)
+    # Se o ticker não estiver no TICKER_SECTOR_MAP, será classificado como "Outros"
     df['sector'] = df['ticker'].map(TICKER_SECTOR_MAP).fillna("Outros")
 
     # Simula o valor total de cada ativo (quantidade * preço)
@@ -29,6 +40,10 @@ def analyze_diversification():
     df['totalValue'] = df['quantity'] * df['averagePrice']
 
     diversification = df.groupby('sector')['totalValue'].sum()
+
+    # Prevenção contra erro do Matplotlib caso o valor total seja 0
+    if diversification.sum() == 0:
+        return jsonify({"error": "Total portfolio value is zero"}), 400
 
     # 2. Usa Matplotlib para gerar o gráfico de pizza
     plt.style.use('seaborn-v0_8-darkgrid')

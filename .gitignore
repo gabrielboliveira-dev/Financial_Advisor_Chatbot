@@ -4,6 +4,20 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Custom Secrets ###
+.env
+*.env
+application-secret.properties
+
+### Python ###
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+
 ### STS ###
 .apt_generated
 .classpath

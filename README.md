@@ -16,45 +16,41 @@ Depois de iniciar os serviços com o Docker Compose, encontre o seu bot no Teleg
 | :--- | :--- |
 | `fazer quiz de perfil` | Inicia o questionário interativo para definir o seu perfil de investidor. |
 | `me dê uma sugestão` | Sugere ativos para estudo com base no seu perfil de risco definido. |
-| `adicionar 100 PETR4 a 38.50` | Adiciona um ativo à sua carteira (quantidade, ticker, preço médio). |
+| `adicionar 100 PETR4` | Adiciona um ativo à sua carteira, buscando o preço atual em tempo real automaticamente. |
+| `adicionar 100 PETR4 a 38.50` | Adiciona um ativo à sua carteira definindo um preço médio específico manualmente. |
 | `ver minha carteira` | Mostra um resumo de todos os ativos que você possui. |
 | `remover PETR4` | Remove completamente um ativo da sua carteira. |
 | `qual o meu desempenho?` | Calcula e exibe a performance atual da sua carteira (lucro/prejuízo, etc.). |
 | `analisar diversificação` | Gera e envia uma imagem com um gráfico de pizza da sua diversificação por setor. |
 | `cotação da PETR4` | Mostra as informações e o preço atual de um ativo específico. |
 
-## ✨ Principais Funcionalidades (Versão 1.0)
+## ✨ Principais Funcionalidades (Versão 1.1)
 
-* **Análise de Ativos em Tempo Real:** Fornece cotações e dados de ativos via API externa.
-* **Gestão de Portfólio:** Permite que o utilizador adicione, visualize e remova ativos da sua carteira pessoal.
+* **Análise de Ativos em Tempo Real:** Fornece cotações e dados de ativos via API externa (Brapi), com fallback de segurança caso o serviço esteja offline.
+* **Gestão de Portfólio Resiliente:** Permite adicionar, visualizar e remover ativos da carteira. Adições sem preço definido buscam a cotação real do mercado no momento da transação.
 * **Cálculo de Preço Médio:** Atualiza automaticamente o preço médio ponderado ao adicionar mais unidades de um ativo existente.
 * **Análise de Performance:** Calcula o valor total investido, o valor atual, o lucro/prejuízo e a rentabilidade percentual da carteira.
-* **Análise de Diversificação Visual:** Comunica-se com um microsserviço Python para gerar e exibir um gráfico de pizza da diversificação da carteira por setor.
+* **Análise de Diversificação Visual:** Comunica-se com um microsserviço Python para gerar e exibir um gráfico de pizza da diversificação da carteira por setor, parametrizado por um arquivo de configuração JSON expansível.
 * **Análise de Perfil de Risco (Quiz):** Conduz um questionário de múltiplos passos para determinar o perfil de investidor do utilizador (Conservador, Moderado, Arrojado).
 * **Sugestão de Ativos:** Oferece sugestões básicas de ativos para estudo, personalizadas de acordo com o perfil de risco do utilizador.
 
-## 📐 Princípios de Design
+## 📐 Princípios de Design e Arquitetura
 
 * **Arquitetura Limpa (Clean Architecture):** A lógica de negócios é 100% independente de frameworks, bases de dados ou APIs, garantindo um sistema testável e flexível.
 * **Código Limpo (Clean Code):** O código foi escrito para ser legível, simples e expressivo, priorizando a manutenibilidade.
 * **SOLID:** Os cinco princípios do design orientado a objetos foram a base para criar um software desacoplado, coeso e extensível.
-
-## 🏗️ Arquitetura do Sistema
-
-O sistema é projetado como uma arquitetura de **microsserviços** orquestrada pelo Docker Compose.
-
-1.  **Interface (Telegram):** O utilizador interage com o bot.
-2.  **Backend (Java / Spring Boot):** O "cérebro" da aplicação. Recebe as mensagens, orquestra os casos de uso, gere a persistência dos dados e comunica-se com outros serviços.
-3.  **Serviço de Análise (Python / Flask):** O "analista de dados". Recebe pedidos do backend para realizar análises complexas (como a diversificação) e gerar visualizações de dados (gráficos), utilizando bibliotecas como Pandas e Matplotlib.
-4.  **Base de Dados (PostgreSQL):** Armazena de forma persistente os dados dos utilizadores e dos seus portfólios.
+* **Resiliência (Circuit Breaker):** Integração com `Resilience4j` para proteger a aplicação contra falhas ou lentidões de APIs externas de cotação.
+* **Microsserviços:** Sistema orquestrado via Docker Compose separando o "Cérebro" (Java) do "Analista de Dados" (Python).
 
 ## 🛠️ Tecnologias Utilizadas
 
 | Área | Tecnologia |
 | :--- | :--- |
-| **Backend** | Java 17, Spring Boot, Spring Data JPA, Spring WebFlux (`WebClient`) |
-| **Serviço de IA/Análise** | Python, Flask, Pandas, Matplotlib |
-| **Persistência** | PostgreSQL |
+| **Backend** | Java 17 (Eclipse Temurin), Spring Boot 3.5, Spring Data JPA, Spring WebFlux (`WebClient`) |
+| **Resiliência** | Resilience4j (Circuit Breaker) |
+| **Serviço de IA/Análise** | Python 3.9, Flask, Pandas, Matplotlib |
+| **Persistência** | PostgreSQL 15 |
+| **Testes** | JUnit 5, Mockito, H2 Database (In-Memory) |
 | **Infraestrutura** | Docker, Docker Compose |
 | **Mensageria** | Telegram Bot API |
 
@@ -68,7 +64,7 @@ O sistema é projetado como uma arquitetura de **microsserviços** orquestrada p
 
 1.  **Clone o repositório:**
     ```bash
-    git clone [https://github.com/gabrielboliveira-dev/Financial_Advisor_Chatbot.git](https://github.com/gabrielboliveira-dev/Financial_Advisor_Chatbot.git)
+    git clone https://github.com/gabrielboliveira-dev/Financial_Advisor_Chatbot.git
     cd Financial_Advisor_Chatbot
     ```
 
@@ -96,14 +92,17 @@ O sistema é projetado como uma arquitetura de **microsserviços** orquestrada p
     ```bash
     docker-compose up --build
     ```
+    *(Nota: o banco de dados é mapeado na porta 5433 para evitar conflitos com instalações locais).*
+    
     Aguarde até que os logs indiquem que os três serviços (`db`, `analysis-service`, `backend`) estão em execução e prontos.
 
-## 🗺️ Roteiro do Projeto (Versão 1.0)
+## 🗺️ Roteiro do Projeto
 
 * [✔️] **Fase 1: Fundação e Dados de Ativos (Concluída)**
 * [✔️] **Fase 2: Contexto do Usuário & Portfólio (Concluída)**
 * [✔️] **Fase 3: Análise e Inteligência (Concluída)**
 * [✔️] **Fase 4: Personalização e Recomendações (Concluída)**
+* [✔️] **Fase 5: Resiliência, Testes e Flexibilidade (Versão 1.1)**
 
 ## 🤝 Como Contribuir
 

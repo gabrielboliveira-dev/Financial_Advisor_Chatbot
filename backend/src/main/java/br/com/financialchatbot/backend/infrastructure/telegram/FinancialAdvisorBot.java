@@ -80,7 +80,7 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
             try {
                 createOrUpdateUserUseCase.execute(new CreateOrUpdateUserUseCase.Input(chatId, firstName));
             } catch (Exception e) {
-                handleGenericError(chatId, e);
+                handleGenericError(chatId, e, "Erro ao processar usuário.");
                 return;
             }
 
@@ -106,7 +106,7 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
             var output = getAssetInformationUseCase.execute(new GetAssetInformationUseCase.Input(ticker));
             String responseText = String.format("📈 **%s (%s)**\n\n🏢 **Mercado:** %s\n💰 **Preço Atual:** R$ %.2f", output.tickerSymbol(), output.companyName(), output.market(), output.currentPrice());
             sendMessage(chatId, responseText);
-        } catch (Exception e) { handleGenericError(chatId, e); }
+        } catch (Exception e) { handleGenericError(chatId, e, "Erro ao obter cotação."); }
     }
 
     private void executeViewPortfolio(long chatId) {
@@ -119,17 +119,32 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
                 portfolio.getAssets().forEach(asset -> response.append(String.format("- **%s**: %d unidades a R$ %.2f (preço médio)\n", asset.ticker(), asset.quantity(), asset.averagePrice())));
             }
             sendMessage(chatId, response.toString());
-        } catch (Exception e) { handleGenericError(chatId, e); }
+        } catch (Exception e) { handleGenericError(chatId, e, "Erro ao visualizar carteira."); }
     }
 
     private void executeAddAsset(long chatId, Map<String, String> entities) {
         try {
             String ticker = entities.get("ticker");
             int quantity = Integer.parseInt(entities.get("quantity"));
-            BigDecimal price = new BigDecimal(entities.get("price"));
+            
+            // Tratamento especial para o preço opcional
+            BigDecimal price = BigDecimal.ZERO;
+            if (entities.get("price") != null && !entities.get("price").equals("0")) {
+                try {
+                    price = new BigDecimal(entities.get("price"));
+                } catch (NumberFormatException ignored) {}
+            }
+            
             addAssetToPortfolioUseCase.execute(new AddAssetToPortfolioUseCase.Input(chatId, ticker, quantity, price));
             sendMessage(chatId, String.format("✅ Ativo **%s** adicionado com sucesso à sua carteira!", ticker));
-        } catch (Exception e) { handleGenericError(chatId, e); }
+        } catch (Exception e) { 
+            // Se foi uma exceção que jogamos de propósito (como ativo não encontrado na API), mostramos a mensagem
+            if (e instanceof IllegalArgumentException) {
+                sendMessage(chatId, "❌ " + e.getMessage());
+            } else {
+                handleGenericError(chatId, e, "Erro ao adicionar ativo."); 
+            }
+        }
     }
 
     private void executeRemoveAsset(long chatId, String ticker) {
@@ -137,16 +152,18 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
         try {
             removeAssetFromPortfolioUseCase.execute(new RemoveAssetFromPortfolioUseCase.Input(chatId, ticker));
             sendMessage(chatId, String.format("🗑️ Ativo **%s** removido com sucesso da sua carteira!", ticker));
-        } catch (Exception e) { handleGenericError(chatId, e); }
+        } catch (Exception e) { handleGenericError(chatId, e, "Erro ao remover ativo."); }
     }
 
-    private void handleGenericError(long chatId, Exception e) {
+    private void handleGenericError(long chatId, Exception e, String contextMessage) {
+        System.err.println("[" + contextMessage + "] Exception: " + e.getClass().getName() + " - " + e.getMessage());
+        e.printStackTrace();
+        
         if (e instanceof NoSuchElementException) {
             sendMessage(chatId, "Não encontrei as informações solicitadas.");
         } else {
             sendMessage(chatId, "Ocorreu um erro inesperado. Por favor, tente novamente.");
         }
-        e.printStackTrace();
     }
 
     private void sendMessage(long chatId, String text) {
@@ -177,7 +194,7 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
             );
             sendMessage(chatId, responseText);
         } catch (Exception e) {
-            handleGenericError(chatId, e);
+            handleGenericError(chatId, e, "Erro ao calcular performance.");
         }
     }
 
@@ -202,7 +219,7 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
             }
 
         } catch (Exception e) {
-            handleGenericError(chatId, e);
+            handleGenericError(chatId, e, "Erro ao analisar diversificação.");
         }
     }
 
@@ -228,7 +245,7 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
 
             sendMessage(chatId, response.toString());
         } catch (Exception e) {
-            handleGenericError(chatId, e);
+            handleGenericError(chatId, e, "Erro ao sugerir ativos.");
         }
     }
 

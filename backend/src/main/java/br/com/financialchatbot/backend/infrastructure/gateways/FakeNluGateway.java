@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 @Component("fakeNluGateway")
 public class FakeNluGateway implements NluGateway {
 
-    private static final Pattern ADD_ASSET_PATTERN = Pattern.compile("(?:ADD|COMPRAR|ADICIONAR)\\s+(\\d+)\\s+(?:DE\\s+)?([A-Z]{4}[0-9]{1,2})\\s*(?:A|POR|@)?\\s*([\\d,.]+)");
+    private static final Pattern ADD_ASSET_PATTERN = Pattern.compile("(?:ADD|COMPRAR|ADICIONAR)\\s+(\\d+)\\s+(?:DE\\s+)?([A-Z]{4}[0-9]{1,2})(?:\\s*(?:A|POR|@)?\\s*([\\d,.]+))?");
     private static final Pattern REMOVE_ASSET_PATTERN = Pattern.compile("(?:REMOV|EXCLUIR)\\s+([A-Z]{4}[0-9]{1,2})");
     private static final Pattern TICKER_PATTERN = Pattern.compile("([A-Z]{4}[0-9]{1,2})");
 
@@ -26,7 +26,17 @@ public class FakeNluGateway implements NluGateway {
             Map<String, String> entities = new HashMap<>();
             entities.put("quantity", addMatcher.group(1));
             entities.put("ticker", addMatcher.group(2));
-            entities.put("price", addMatcher.group(3).replace(",", "."));
+            
+            // Opcional: Se o usuário não informar o preço, usamos "0" temporariamente. 
+            // O backend ou use case idealmente lidaria com a busca do preço atual se fosse 0.
+            // Para manter a compatibilidade com a regex sem quebrar a assinatura, fazemos o fallback.
+            String priceGroup = addMatcher.group(3);
+            if (priceGroup != null && !priceGroup.isBlank()) {
+                entities.put("price", priceGroup.replace(",", "."));
+            } else {
+                 entities.put("price", "0"); // Precisa ser tratado no Use Case ou Controller. 
+            }
+
             return Optional.of(new Intent("add_asset", entities));
         }
 
@@ -47,8 +57,11 @@ public class FakeNluGateway implements NluGateway {
             return Optional.of(new Intent("view_portfolio", Map.of()));
         }
 
-        if (upperCaseText.contains("PERFORMANCE") || upperCaseText.contains("DESEMPENHO") || upperCaseText.contains("LUCRO") ||
-                upperCaseText.contains("DIVERSIFICACAO") || upperCaseText.contains("ANALISE") || upperCaseText.contains("ANALISAR")) {
+        if (upperCaseText.contains("PERFORMANCE") || upperCaseText.contains("DESEMPENHO") || upperCaseText.contains("LUCRO")) {
+            return Optional.of(new Intent("calculate_performance", Map.of()));
+        }
+
+        if (upperCaseText.contains("DIVERSIFICACAO") || upperCaseText.contains("ANALISE") || upperCaseText.contains("ANALISAR")) {
             return Optional.of(new Intent("analyze_diversification", Map.of()));
         }
 
