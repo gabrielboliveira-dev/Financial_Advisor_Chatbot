@@ -1,64 +1,83 @@
-# Assistente Financeiro Pessoal com IA
+# 🤖 Financial Advisor Chatbot
+_Descomplicando investimentos com inteligência artificial e uma arquitetura robusta._
 
-## 🎯 Visão Geral
+## 🎯 Sobre o Projeto
 
-O mercado financeiro é complexo e intimidador para a maioria das pessoas. A falta de acesso a orientação de qualidade e ferramentas intuitivas cria uma barreira significativa para quem deseja investir com segurança e inteligência.
+O mercado financeiro é frequentemente complexo e inacessível para a maioria das pessoas, criando uma barreira significativa para quem deseja investir com segurança e inteligência. Este projeto aborda essa dor desenvolvendo um **assistente de investimentos pessoal** na forma de um chatbot para Telegram.
 
-Este projeto nasceu para resolver essa dor. O objetivo foi construir um **assistente de investimentos pessoal, completo e acessível**, um chatbot com IA que descomplica as finanças e capacita o utilizador a tomar decisões mais inteligentes.
+Utilizando uma arquitetura de microsserviços e aplicando princípios de engenharia de software de alta qualidade (Clean Architecture, SOLID), o bot vai além de simplesmente fornecer dados. Ele oferece:
+*   **Análise de Portfólio:** Visão detalhada dos ativos.
+*   **Gestão de Carteira:** Ferramentas para adicionar, remover e acompanhar investimentos.
+*   **Análise de Perfil de Risco:** Determinação do perfil do investidor através de um quiz interativo.
+*   **Sugestões Personalizadas:** Recomendações de ativos para estudo baseadas no perfil.
 
-Utilizando uma arquitetura de microsserviços robusta e seguindo os mais altos padrões de engenharia de software (Arquitetura Limpa, Código Limpo, SOLID), este assistente vai além de simplesmente fornecer dados. Ele oferece análise de portfólio, gestão de carteira e insights personalizados, tudo através de uma conversa intuitiva no Telegram.
+Tudo isso é entregue através de uma interface conversacional intuitiva no Telegram, capacitando usuários a tomar decisões financeiras mais informadas e inteligentes.
 
-## 🤖 Como Usar o Bot
+## 🛠️ Tecnologias e Ferramentas
 
-Depois de iniciar os serviços com o Docker Compose, encontre o seu bot no Telegram e comece a conversa. Aqui estão alguns comandos que ele entende:
+O projeto é construído sobre uma stack tecnológica moderna e robusta:
 
-| Comando / Frase de Exemplo | Ação do Bot |
-| :--- | :--- |
-| `fazer quiz de perfil` | Inicia o questionário interativo para definir o seu perfil de investidor. |
-| `me dê uma sugestão` | Sugere ativos para estudo com base no seu perfil de risco definido. |
-| `adicionar 100 PETR4` | Adiciona um ativo à sua carteira, buscando o preço atual em tempo real automaticamente. |
-| `adicionar 100 PETR4 a 38.50` | Adiciona um ativo à sua carteira definindo um preço médio específico manualmente. |
-| `ver minha carteira` | Mostra um resumo de todos os ativos que você possui. |
-| `remover PETR4` | Remove completamente um ativo da sua carteira. |
-| `qual o meu desempenho?` | Calcula e exibe a performance atual da sua carteira (lucro/prejuízo, etc.). |
-| `analisar diversificação` | Gera e envia uma imagem com um gráfico de pizza da sua diversificação por setor. |
-| `cotação da PETR4` | Mostra as informações e o preço atual de um ativo específico. |
+*   **Backend (Java):**
+    *   ☕ **Java 17 (Eclipse Temurin):** Linguagem de programação principal, escolhida por sua performance, ecossistema maduro e robustez.
+    *   🍃 **Spring Boot 3.5:** Framework para construção rápida e eficiente de aplicações Java, facilitando a configuração, o desenvolvimento de APIs e o deploy.
+    *   🌐 **Spring WebFlux (`WebClient`):** Utilizado para comunicação reativa e não bloqueante com APIs externas, otimizando o uso de recursos.
+    *   💾 **Spring Data JPA:** Simplifica a interação com o banco de dados relacional, abstraindo a complexidade do JDBC.
+    *   🛡️ **Resilience4j:** Implementação de Circuit Breaker para garantir a resiliência do sistema contra falhas e latência de serviços externos (como a API de cotação).
+    *   💬 **Telegram Bots API:** Biblioteca para integração direta e eficiente com a plataforma Telegram, permitindo a comunicação com o usuário.
 
-## ✨ Principais Funcionalidades (Versão 1.1)
+*   **Serviço de Análise (Python):**
+    *   🐍 **Python 3.9:** Linguagem versátil para processamento de dados e geração de gráficos, ideal para tarefas analíticas.
+    *   🧪 **Flask:** Micro-framework web leve, utilizado para expor o serviço de análise como uma API REST simples.
+    *   📊 **Pandas & Matplotlib:** Bibliotecas essenciais para manipulação de dados (Pandas) e visualização gráfica (Matplotlib), permitindo a geração de gráficos de pizza para diversificação.
 
-* **Análise de Ativos em Tempo Real:** Fornece cotações e dados de ativos via API externa (Brapi), com fallback de segurança caso o serviço esteja offline.
-* **Gestão de Portfólio Resiliente:** Permite adicionar, visualizar e remover ativos da carteira. Adições sem preço definido buscam a cotação real do mercado no momento da transação.
-* **Cálculo de Preço Médio:** Atualiza automaticamente o preço médio ponderado ao adicionar mais unidades de um ativo existente.
-* **Análise de Performance:** Calcula o valor total investido, o valor atual, o lucro/prejuízo e a rentabilidade percentual da carteira.
-* **Análise de Diversificação Visual:** Comunica-se com um microsserviço Python para gerar e exibir um gráfico de pizza da diversificação da carteira por setor, parametrizado por um arquivo de configuração JSON expansível.
-* **Análise de Perfil de Risco (Quiz):** Conduz um questionário de múltiplos passos para determinar o perfil de investidor do utilizador (Conservador, Moderado, Arrojado).
-* **Sugestão de Ativos:** Oferece sugestões básicas de ativos para estudo, personalizadas de acordo com o perfil de risco do utilizador.
+*   **Persistência:**
+    *   🐘 **PostgreSQL 15:** Banco de dados relacional robusto, escalável e de código aberto, escolhido para armazenar dados do usuário e portfólios.
 
-## 📐 Princípios de Design e Arquitetura
+*   **Infraestrutura:**
+    *   🐳 **Docker & Docker Compose:** Ferramentas para conteinerização e orquestração dos microsserviços, garantindo um ambiente de desenvolvimento e produção consistente e isolado.
 
-* **Arquitetura Limpa (Clean Architecture):** A lógica de negócios é 100% independente de frameworks, bases de dados ou APIs, garantindo um sistema testável e flexível.
-* **Código Limpo (Clean Code):** O código foi escrito para ser legível, simples e expressivo, priorizando a manutenibilidade.
-* **SOLID:** Os cinco princípios do design orientado a objetos foram a base para criar um software desacoplado, coeso e extensível.
-* **Resiliência (Circuit Breaker):** Integração com `Resilience4j` para proteger a aplicação contra falhas ou lentidões de APIs externas de cotação.
-* **Microsserviços:** Sistema orquestrado via Docker Compose separando o "Cérebro" (Java) do "Analista de Dados" (Python).
+*   **Testes:**
+    *   ✅ **JUnit 5 & Mockito:** Frameworks padrão para testes unitários e de integração em Java, garantindo a qualidade e a manutenibilidade do código.
+    *   🗄️ **H2 Database (In-Memory):** Banco de dados em memória utilizado para testes rápidos e isolados, evitando dependências de um banco de dados real durante a fase de testes.
 
-## 🛠️ Tecnologias Utilizadas
+## 📐 Arquitetura
 
-| Área | Tecnologia |
-| :--- | :--- |
-| **Backend** | Java 17 (Eclipse Temurin), Spring Boot 3.5, Spring Data JPA, Spring WebFlux (`WebClient`) |
-| **Resiliência** | Resilience4j (Circuit Breaker) |
-| **Serviço de IA/Análise** | Python 3.9, Flask, Pandas, Matplotlib |
-| **Persistência** | PostgreSQL 15 |
-| **Testes** | JUnit 5, Mockito, H2 Database (In-Memory) |
-| **Infraestrutura** | Docker, Docker Compose |
-| **Mensageria** | Telegram Bot API |
+O projeto é estruturado em uma **arquitetura de microsserviços**, dividindo a aplicação em dois componentes principais: o "Cérebro" (backend Java) e o "Analista de Dados" (microsserviço Python).
 
-## 🚀 Como Começar
+É fortemente influenciado pela **Clean Architecture**, garantindo uma separação clara de responsabilidades entre as camadas (Domain, Application, Infrastructure). Isso torna a lógica de negócios independente de frameworks e tecnologias externas, facilitando a testabilidade, a manutenibilidade e a evolução do sistema.
+
+Os **princípios SOLID** foram rigorosamente aplicados para promover um design de software desacoplado, coeso e extensível. A **resiliência** é uma preocupação central, com a implementação de **Circuit Breakers** (Resilience4j) para proteger o sistema contra falhas e latência em APIs externas, melhorando a disponibilidade e a experiência do usuário.
+
+## ✨ Funcionalidades Implementadas
+
+O chatbot oferece as seguintes funcionalidades, acessíveis através de comandos intuitivos no Telegram:
+
+| Comando / Frase de Exemplo | Ação do Bot | Status |
+| :--- | :--- | :--- |
+| `fazer quiz de perfil` | Inicia o questionário interativo para definir o perfil de investidor do usuário. | ✅ Implementado |
+| `me dê uma sugestão` | Sugere ativos para estudo com base no perfil de risco definido. | ✅ Implementado |
+| `adicionar 100 PETR4` | Adiciona um ativo à carteira, buscando o preço atual em tempo real. | ✅ Implementado |
+| `adicionar 100 PETR4 a 38.50` | Adiciona um ativo à carteira definindo um preço médio específico. | ✅ Implementado |
+| `ver minha carteira` | Mostra um resumo de todos os ativos que o usuário possui. | ✅ Implementado |
+| `remover PETR4` | Remove completamente um ativo da carteira. | ✅ Implementado |
+| `qual o meu desempenho?` | Calcula e exibe a performance atual da carteira (lucro/prejuízo, rentabilidade percentual). | ✅ Implementado |
+| `analisar diversificação` | Gera e envia uma imagem com um gráfico de pizza da diversificação por setor. | ✅ Implementado |
+| `cotação da PETR4` | Mostra as informações e o preço atual de um ativo específico. | ✅ Implementado |
+| `quanto está ATIVO_INEXISTENTE` | Informa que o ativo não foi encontrado, com uma mensagem de erro específica. | ✅ Implementado |
+
+**Principais Características:**
+*   **Análise de Ativos em Tempo Real:** Fornece cotações e dados de ativos via API externa (Brapi), com fallback de segurança e Circuit Breaker.
+*   **Gestão de Portfólio Completa:** Permite adicionar, visualizar e remover ativos da carteira, com cálculo automático de preço médio ponderado.
+*   **Cálculo de Performance:** Calcula o valor total investido, o valor atual, o lucro/prejuízo e a rentabilidade percentual da carteira.
+*   **Análise de Diversificação Visual:** Comunica-se com um microsserviço Python para gerar e exibir um gráfico de pizza da diversificação da carteira por setor.
+*   **Análise de Perfil de Risco (Quiz):** Conduz um questionário de múltiplos passos para determinar o perfil de investidor do usuário (Conservador, Moderado, Arrojado).
+*   **Sugestão de Ativos Personalizada:** Oferece sugestões básicas de ativos para estudo, personalizadas de acordo com o perfil de risco do usuário.
+
+## 🚀 Como Rodar o Projeto
 
 **Pré-requisitos:**
-* Git
-* Docker e Docker Compose
+*   `Git` instalado.
+*   `Docker` e `Docker Compose` instalados e em execução.
 
 **Passos:**
 

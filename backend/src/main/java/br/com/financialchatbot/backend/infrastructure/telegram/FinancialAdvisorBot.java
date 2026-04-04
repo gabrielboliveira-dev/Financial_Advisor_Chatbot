@@ -71,32 +71,37 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
             long chatId = message.getChatId();
             String firstName = message.getFrom().getFirstName();
 
-            if (quizStateCache.findByChatId(chatId).isPresent()) {
-                var output = processQuizResponseUseCase.execute(chatId, messageText);
-                sendMessage(chatId, output.responseText());
-                return;
-            }
-
-            try {
-                createOrUpdateUserUseCase.execute(new CreateOrUpdateUserUseCase.Input(chatId, firstName));
-            } catch (Exception e) {
-                handleGenericError(chatId, e, "Erro ao processar usuário.");
-                return;
-            }
-
-            nluGateway.interpret(messageText).ifPresentOrElse(intent -> {
-                switch (intent.name()) {
-                    case "get_asset_information" -> executeGetAssetInfo(chatId, intent.entities().get("ticker"));
-                    case "view_portfolio" -> executeViewPortfolio(chatId);
-                    case "add_asset" -> executeAddAsset(chatId, intent.entities());
-                    case "remove_asset" -> executeRemoveAsset(chatId, intent.entities().get("ticker"));
-                    case "calculate_performance" -> executeCalculatePerformance(chatId);
-                    case "analyze_diversification" -> executeAnalyzeDiversification(chatId);
-                    case "start_risk_profile_quiz" -> executeStartQuiz(chatId);
-                    case "suggest_assets" -> executeSuggestAssets(chatId);
-                    default -> sendMessage(chatId, "Desculpe, ainda não sei como processar essa solicitação.");
+            try { // Adicionado bloco try-catch abrangente
+                if (quizStateCache.findByChatId(chatId).isPresent()) {
+                    var output = processQuizResponseUseCase.execute(chatId, messageText);
+                    sendMessage(chatId, output.responseText());
+                    return;
                 }
-            }, () -> sendMessage(chatId, "Desculpe, não entendi o que você quis dizer."));
+
+                try {
+                    createOrUpdateUserUseCase.execute(new CreateOrUpdateUserUseCase.Input(chatId, firstName));
+                } catch (Exception e) {
+                    handleGenericError(chatId, e, "Erro ao processar usuário.");
+                    return;
+                }
+
+                nluGateway.interpret(messageText).ifPresentOrElse(intent -> {
+                    switch (intent.name()) {
+                        case "get_asset_information" -> executeGetAssetInfo(chatId, intent.entities().get("ticker"));
+                        case "view_portfolio" -> executeViewPortfolio(chatId);
+                        case "add_asset" -> executeAddAsset(chatId, intent.entities());
+                        case "remove_asset" -> executeRemoveAsset(chatId, intent.entities().get("ticker"));
+                        case "calculate_performance" -> executeCalculatePerformance(chatId);
+                        case "analyze_diversification" -> executeAnalyzeDiversification(chatId);
+                        case "start_risk_profile_quiz" -> executeStartQuiz(chatId);
+                        case "suggest_assets" -> executeSuggestAssets(chatId);
+                        default -> sendMessage(chatId, "Desculpe, ainda não sei como processar essa solicitação.");
+                    }
+                }, () -> sendMessage(chatId, "Desculpe, não entendi o que você quis dizer."));
+            } catch (Exception e) {
+                // Captura qualquer exceção não tratada no fluxo principal
+                handleGenericError(chatId, e, "Erro inesperado no processamento da mensagem.");
+            }
         }
     }
 
@@ -126,8 +131,7 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
         try {
             String ticker = entities.get("ticker");
             int quantity = Integer.parseInt(entities.get("quantity"));
-            
-            // Tratamento especial para o preço opcional
+
             BigDecimal price = BigDecimal.ZERO;
             if (entities.get("price") != null && !entities.get("price").equals("0")) {
                 try {
@@ -137,8 +141,7 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
             
             addAssetToPortfolioUseCase.execute(new AddAssetToPortfolioUseCase.Input(chatId, ticker, quantity, price));
             sendMessage(chatId, String.format("✅ Ativo **%s** adicionado com sucesso à sua carteira!", ticker));
-        } catch (Exception e) { 
-            // Se foi uma exceção que jogamos de propósito (como ativo não encontrado na API), mostramos a mensagem
+        } catch (Exception e) {
             if (e instanceof IllegalArgumentException) {
                 sendMessage(chatId, "❌ " + e.getMessage());
             } else {
@@ -158,9 +161,8 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
     private void handleGenericError(long chatId, Exception e, String contextMessage) {
         System.err.println("[" + contextMessage + "] Exception: " + e.getClass().getName() + " - " + e.getMessage());
         e.printStackTrace();
-        
         if (e instanceof NoSuchElementException) {
-            sendMessage(chatId, "Não encontrei as informações solicitadas.");
+            sendMessage(chatId, "❌ " + e.getMessage());
         } else {
             sendMessage(chatId, "Ocorreu um erro inesperado. Por favor, tente novamente.");
         }
@@ -224,7 +226,7 @@ public class FinancialAdvisorBot extends TelegramLongPollingBot {
     }
 
     private void executeStartQuiz(long chatId) {
-        var output = processQuizResponseUseCase.execute(chatId, null); // Inicia o quiz
+        var output = processQuizResponseUseCase.execute(chatId, null);
         sendMessage(chatId, output.responseText());
     }
 

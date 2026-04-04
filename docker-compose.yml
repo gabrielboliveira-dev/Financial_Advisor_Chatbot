@@ -25,7 +25,7 @@ services:
     image: postgres:15
     container_name: financial_db
     ports:
-      - "5433:5432"
+      - "5434:5432"
     environment:
       - POSTGRES_DB=financialdb
       - POSTGRES_USER=${DB_USER}

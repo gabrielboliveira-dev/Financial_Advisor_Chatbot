@@ -41,4 +41,6 @@ public class QuizStateCache {
         public void nextQuestion() { this.currentQuestionId++; }
         public void addScore(int points) { this.score += points; }
     }
+
+
 }

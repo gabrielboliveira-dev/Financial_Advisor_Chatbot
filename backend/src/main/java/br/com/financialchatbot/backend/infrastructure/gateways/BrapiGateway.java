@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.HashMap; // Import adicionado
 
 @Component
 public class BrapiGateway implements FinancialAssetGateway {
@@ -48,31 +49,17 @@ public class BrapiGateway implements FinancialAssetGateway {
     }
 
     @Override
-    @CircuitBreaker(name = "brapi", fallbackMethod = "fallbackFindByTickers")
+    // O CircuitBreaker será aplicado implicitamente a cada chamada de findByTicker
     public Map<String, FinancialAsset> findByTickers(List<String> tickers) {
         if (tickers == null || tickers.isEmpty()) {
             return Collections.emptyMap();
         }
 
-        String tickersAsString = String.join(",", tickers);
-
-        BrapiApiResponseDto response = webClient.get()
-                .uri(uriBuilder -> uriBuilder.path("/quote/{tickers}").build(tickersAsString))
-                .retrieve()
-                .bodyToMono(BrapiApiResponseDto.class)
-                .block();
-
-        if (response == null || response.results() == null) {
-            return Collections.emptyMap();
+        Map<String, FinancialAsset> result = new HashMap<>();
+        for (String ticker : tickers) {
+            findByTicker(ticker).ifPresent(asset -> result.put(asset.tickerSymbol(), asset));
         }
-
-        return response.results().stream()
-                .map(quote -> new FinancialAsset(
-                        quote.symbol(),
-                        quote.longName(),
-                        "B3",
-                        quote.regularMarketPrice()))
-                .collect(Collectors.toMap(FinancialAsset::tickerSymbol, asset -> asset));
+        return result;
     }
 
     // --- Fallback Methods ---
@@ -82,6 +69,7 @@ public class BrapiGateway implements FinancialAssetGateway {
         return Optional.empty(); 
     }
 
+    // Este fallback não será mais chamado diretamente, pois findByTickers agora chama findByTicker individualmente
     public Map<String, FinancialAsset> fallbackFindByTickers(List<String> tickers, Throwable t) {
         System.err.println("Circuit Breaker aberto ou erro de rede ao buscar lista de ativos: " + t.getMessage());
         return Collections.emptyMap(); 

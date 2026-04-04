@@ -13,8 +13,8 @@ import java.util.regex.Pattern;
 public class FakeNluGateway implements NluGateway {
 
     private static final Pattern ADD_ASSET_PATTERN = Pattern.compile("(?:ADD|COMPRAR|ADICIONAR)\\s+(\\d+)\\s+(?:DE\\s+)?([A-Z]{4}[0-9]{1,2})(?:\\s*(?:A|POR|@)?\\s*([\\d,.]+))?");
-    private static final Pattern REMOVE_ASSET_PATTERN = Pattern.compile("(?:REMOV|EXCLUIR)\\s+([A-Z]{4}[0-9]{1,2})");
-    private static final Pattern TICKER_PATTERN = Pattern.compile("([A-Z]{4}[0-9]{1,2})");
+    private static final Pattern REMOVE_ASSET_PATTERN = Pattern.compile("(?:REMOVER|EXCLUIR)\\s+([A-Z0-9_]+)");
+    private static final Pattern GET_ASSET_INFO_SPECIFIC_PATTERN = Pattern.compile("(?:COTAÇÃO\\s+DA|PREÇO\\s+DE|QUANTO\\s+ESTÁ)\\s+([A-Z0-9_]+)");
 
     @Override
     public Optional<Intent> interpret(String text) {
@@ -27,16 +27,12 @@ public class FakeNluGateway implements NluGateway {
             entities.put("quantity", addMatcher.group(1));
             entities.put("ticker", addMatcher.group(2));
             
-            // Opcional: Se o usuário não informar o preço, usamos "0" temporariamente. 
-            // O backend ou use case idealmente lidaria com a busca do preço atual se fosse 0.
-            // Para manter a compatibilidade com a regex sem quebrar a assinatura, fazemos o fallback.
             String priceGroup = addMatcher.group(3);
             if (priceGroup != null && !priceGroup.isBlank()) {
                 entities.put("price", priceGroup.replace(",", "."));
             } else {
-                 entities.put("price", "0"); // Precisa ser tratado no Use Case ou Controller. 
+                 entities.put("price", "0");
             }
-
             return Optional.of(new Intent("add_asset", entities));
         }
 
@@ -45,11 +41,16 @@ public class FakeNluGateway implements NluGateway {
             return Optional.of(new Intent("remove_asset", Map.of("ticker", removeMatcher.group(1))));
         }
 
+        Matcher getAssetInfoSpecificMatcher = GET_ASSET_INFO_SPECIFIC_PATTERN.matcher(upperCaseText);
+        if (getAssetInfoSpecificMatcher.find()) {
+            return Optional.of(new Intent("get_asset_information", Map.of("ticker", getAssetInfoSpecificMatcher.group(1))));
+        }
+
         if (upperCaseText.contains("QUIZ") || upperCaseText.contains("PERFIL")) {
             return Optional.of(new Intent("start_risk_profile_quiz", Map.of()));
         }
 
-        if (upperCaseText.contains("SUGESTAO") || upperCaseText.contains("RECOMENDA") || upperCaseText.contains("SUGERIR")) {
+        if (upperCaseText.contains("SUGESTAO") || upperCaseText.contains("SUGESTÃO") || upperCaseText.contains("RECOMENDA") || upperCaseText.contains("SUGERIR")) {
             return Optional.of(new Intent("suggest_assets", Map.of()));
         }
 
@@ -65,9 +66,8 @@ public class FakeNluGateway implements NluGateway {
             return Optional.of(new Intent("analyze_diversification", Map.of()));
         }
 
-        Matcher tickerMatcher = TICKER_PATTERN.matcher(upperCaseText);
-        if (tickerMatcher.find()) {
-            return Optional.of(new Intent("get_asset_information", Map.of("ticker", tickerMatcher.group(1))));
+        if (upperCaseText.matches("^[A-Z]{4}[0-9]{1,2}$")) {
+             return Optional.of(new Intent("get_asset_information", Map.of("ticker", upperCaseText)));
         }
 
         System.out.println("[NLU FAKE] Nenhuma intenção encontrada.");

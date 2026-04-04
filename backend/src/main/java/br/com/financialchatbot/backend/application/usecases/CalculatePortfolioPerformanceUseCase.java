@@ -11,9 +11,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 @Component
 public class CalculatePortfolioPerformanceUseCase {
+
+    private static final Logger LOGGER = Logger.getLogger(CalculatePortfolioPerformanceUseCase.class.getName());
 
     private final PortfolioGateway portfolioGateway;
     private final FinancialAssetGateway financialAssetGateway;
@@ -44,28 +47,28 @@ public class CalculatePortfolioPerformanceUseCase {
 
         Map<String, FinancialAsset> currentData = financialAssetGateway.findByTickers(tickers);
 
-        BigDecimal totalInvested = BigDecimal.ZERO;
-        BigDecimal currentValue = BigDecimal.ZERO;
+        BigDecimal totalInvestedForCalculation = BigDecimal.ZERO;
+        BigDecimal currentValueForCalculation = BigDecimal.ZERO;
 
         for (PortfolioAsset asset : portfolio.getAssets()) {
-            BigDecimal investedInAsset = asset.averagePrice().multiply(BigDecimal.valueOf(asset.quantity()));
-            totalInvested = totalInvested.add(investedInAsset);
-
             FinancialAsset currentAssetData = currentData.get(asset.ticker());
             if (currentAssetData != null) {
+                BigDecimal investedInAsset = asset.averagePrice().multiply(BigDecimal.valueOf(asset.quantity()));
+                totalInvestedForCalculation = totalInvestedForCalculation.add(investedInAsset);
+
                 BigDecimal currentValueOfAsset = currentAssetData.currentPrice().multiply(BigDecimal.valueOf(asset.quantity()));
-                currentValue = currentValue.add(currentValueOfAsset);
+                currentValueForCalculation = currentValueForCalculation.add(currentValueOfAsset);
             } else {
-                currentValue = currentValue.add(investedInAsset);
+                LOGGER.warning("Could not fetch current price for ticker: " + asset.ticker() + ". This asset will be excluded from performance calculation.");
             }
         }
 
-        BigDecimal profitOrLoss = currentValue.subtract(totalInvested);
+        BigDecimal profitOrLoss = currentValueForCalculation.subtract(totalInvestedForCalculation);
         BigDecimal returnPercentage = BigDecimal.ZERO;
-        if (totalInvested.compareTo(BigDecimal.ZERO) != 0) {
-            returnPercentage = profitOrLoss.divide(totalInvested, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+        if (totalInvestedForCalculation.compareTo(BigDecimal.ZERO) != 0) {
+            returnPercentage = profitOrLoss.divide(totalInvestedForCalculation, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
         }
 
-        return new Performance(totalInvested, currentValue, profitOrLoss, returnPercentage);
+        return new Performance(totalInvestedForCalculation, currentValueForCalculation, profitOrLoss, returnPercentage);
     }
 }

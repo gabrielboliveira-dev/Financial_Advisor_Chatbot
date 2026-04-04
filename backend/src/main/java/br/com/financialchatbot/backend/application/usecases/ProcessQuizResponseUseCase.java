@@ -9,6 +9,7 @@ import br.com.financialchatbot.backend.infrastructure.cache.QuizStateCache;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
+import java.util.Map;
 
 @Component
 public class ProcessQuizResponseUseCase {
@@ -36,7 +37,14 @@ public class ProcessQuizResponseUseCase {
         QuizQuestion currentQuestion = quizService.getQuestionById(state.getCurrentQuestionId())
                 .orElseThrow();
 
-        Integer score = currentQuestion.options().get(userAnswer);
+        Integer score = null;
+        for (Map.Entry<String, Integer> entry : currentQuestion.options().entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(userAnswer)) {
+                score = entry.getValue();
+                break;
+            }
+        }
+
         if (score == null) {
             return new Output("Resposta inválida. Por favor, escolha uma das opções.", false);
         }
