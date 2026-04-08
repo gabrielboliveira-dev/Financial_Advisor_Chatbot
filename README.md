@@ -6,40 +6,40 @@ _Descomplicando investimentos com inteligência artificial e uma arquitetura rob
 O mercado financeiro é frequentemente complexo e inacessível para a maioria das pessoas, criando uma barreira significativa para quem deseja investir com segurança e inteligência. Este projeto aborda essa dor desenvolvendo um **assistente de investimentos pessoal** na forma de um chatbot para Telegram.
 
 Utilizando uma arquitetura de microsserviços e aplicando princípios de engenharia de software de alta qualidade (Clean Architecture, SOLID), o bot vai além de simplesmente fornecer dados. Ele oferece:
-*   **Análise de Portfólio:** Visão detalhada dos ativos.
-*   **Gestão de Carteira:** Ferramentas para adicionar, remover e acompanhar investimentos.
-*   **Análise de Perfil de Risco:** Determinação do perfil do investidor através de um quiz interativo.
-*   **Sugestões Personalizadas:** Recomendações de ativos para estudo baseadas no perfil.
+* **Análise de Portfólio:** Visão detalhada dos ativos.
+* **Gestão de Carteira:** Ferramentas para adicionar, remover e acompanhar investimentos.
+* **Análise de Perfil de Risco:** Determinação do perfil do investidor através de um quiz interativo.
+* **Sugestões Personalizadas:** Recomendações de ativos para estudo baseadas no perfil.
 
 Tudo isso é entregue através de uma interface conversacional intuitiva no Telegram, capacitando usuários a tomar decisões financeiras mais informadas e inteligentes.
 
 ## 🛠️ Tecnologias e Ferramentas
 
-O projeto é construído sobre uma stack tecnológica moderna e robusta:
+O projeto é construído sobre uma stack tecnológica moderna, dividindo responsabilidades entre o ecossistema Java e Python:
 
-*   **Backend (Java):**
-    *   ☕ **Java 17 (Eclipse Temurin):** Linguagem de programação principal, escolhida por sua performance, ecossistema maduro e robustez.
-    *   🍃 **Spring Boot 3.5:** Framework para construção rápida e eficiente de aplicações Java, facilitando a configuração, o desenvolvimento de APIs e o deploy.
-    *   🌐 **Spring WebFlux (`WebClient`):** Utilizado para comunicação reativa e não bloqueante com APIs externas, otimizando o uso de recursos.
-    *   💾 **Spring Data JPA:** Simplifica a interação com o banco de dados relacional, abstraindo a complexidade do JDBC.
-    *   🛡️ **Resilience4j:** Implementação de Circuit Breaker para garantir a resiliência do sistema contra falhas e latência de serviços externos (como a API de cotação).
-    *   💬 **Telegram Bots API:** Biblioteca para integração direta e eficiente com a plataforma Telegram, permitindo a comunicação com o usuário.
-
-*   **Serviço de Análise (Python):**
-    *   🐍 **Python 3.9:** Linguagem versátil para processamento de dados e geração de gráficos, ideal para tarefas analíticas.
-    *   🧪 **Flask:** Micro-framework web leve, utilizado para expor o serviço de análise como uma API REST simples.
-    *   📊 **Pandas & Matplotlib:** Bibliotecas essenciais para manipulação de dados (Pandas) e visualização gráfica (Matplotlib), permitindo a geração de gráficos de pizza para diversificação.
-
-*   **Persistência:**
-    *   🐘 **PostgreSQL 15:** Banco de dados relacional robusto, escalável e de código aberto, escolhido para armazenar dados do usuário e portfólios.
-
-*   **Infraestrutura:**
-    *   🐳 **Docker & Docker Compose:** Ferramentas para conteinerização e orquestração dos microsserviços, garantindo um ambiente de desenvolvimento e produção consistente e isolado.
-
-*   **Testes:**
-    *   ✅ **JUnit 5 & Mockito:** Frameworks padrão para testes unitários e de integração em Java, garantindo a qualidade e a manutenibilidade do código.
-    *   🗄️ **H2 Database (In-Memory):** Banco de dados em memória utilizado para testes rápidos e isolados, evitando dependências de um banco de dados real durante a fase de testes.
-
+* **Linguagens:** Java 17 & Python 3.9
+    * *Justificativa:* Java oferece a robustez, tipagem forte e performance necessárias para o *core* de regras de negócios. Python foi escolhido pela sua imensa facilidade e ecossistema maduro para manipulação de dados financeiros e geração de gráficos.
+* **Framework Backend:** Spring Boot 3.5
+    * *Justificativa:* Framework padrão da indústria que acelera a criação da API, injeção de dependências e configuração do servidor de forma robusta, mantendo o domínio limpo.
+* **Micro-framework de Análise:** Flask
+    * *Justificativa:* Leve e direto ao ponto, ideal para expor os scripts de análise de dados do Python rapidamente como uma API REST interna consumida pelo Java.
+* **Comunicação Externa:** Spring WebFlux (`WebClient`) & Telegram Bots API
+    * *Justificativa:* O `WebClient` permite chamadas assíncronas e não-bloqueantes de alta performance para a API de cotações, enquanto a API do Telegram gerencia toda a interface conversacional com o usuário de forma nativa.
+* **Resiliência e Tolerância a Falhas:** Resilience4j (Circuit Breaker)
+    * *Justificativa:* Protege o sistema contra instabilidades de APIs financeiras externas. Se o provedor de cotações falhar, o *Circuit Breaker* abre, impedindo travamentos em cascata e retornando respostas de *fallback* amigáveis ao usuário.
+* **Processamento de Dados e Visualização:** Pandas & Matplotlib
+    * *Justificativa:* Ferramentas fundamentais no Python para manipular rapidamente matrizes de dados de portfólio e renderizar o gráfico de pizza visualizando a diversificação setorial.
+* **Banco de Dados:** PostgreSQL 15
+    * *Justificativa:* Banco de dados relacional escalável e confiável, excelente para garantir a integridade dos dados (ACID) na modelagem das carteiras e perfis dos usuários.
+* **Persistência:** Spring Data JPA / Hibernate
+    * *Justificativa:* Abstrai o boilerplate de consultas SQL e do JDBC, facilitando o mapeamento das entidades de infraestrutura para o banco de dados.
+* **Contêineres:** Docker & Docker Compose
+    * *Justificativa:* Padroniza totalmente o ambiente. Permite orquestrar e subir o banco de dados, o backend Java e o serviço Python simultaneamente em uma rede isolada com um único comando.
+* **Testes:** JUnit 5, Mockito & H2 Database
+    * *Justificativa:* Ferramentas padrão para garantir que as regras de negócio funcionem isoladas. O banco H2 em memória permite rodar testes de integração complexos de forma extremamente rápida sem depender do PostgreSQL.
+* **CI/CD:** GitHub Actions
+    * *Justificativa:* Pipeline automatizado na nuvem para validação de builds (Java e Python), execução de testes e verificação de integridade dos contêineres a cada novo commit.
+  
 ## 📐 Arquitetura
 
 O projeto é estruturado em uma **arquitetura de microsserviços**, dividindo a aplicação em dois componentes principais: o "Cérebro" (backend Java) e o "Analista de Dados" (microsserviço Python).
@@ -66,24 +66,25 @@ O chatbot oferece as seguintes funcionalidades, acessíveis através de comandos
 | `quanto está ATIVO_INEXISTENTE` | Informa que o ativo não foi encontrado, com uma mensagem de erro específica. | ✅ Implementado |
 
 **Principais Características:**
-*   **Análise de Ativos em Tempo Real:** Fornece cotações e dados de ativos via API externa (Brapi), com fallback de segurança e Circuit Breaker.
-*   **Gestão de Portfólio Completa:** Permite adicionar, visualizar e remover ativos da carteira, com cálculo automático de preço médio ponderado.
-*   **Cálculo de Performance:** Calcula o valor total investido, o valor atual, o lucro/prejuízo e a rentabilidade percentual da carteira.
-*   **Análise de Diversificação Visual:** Comunica-se com um microsserviço Python para gerar e exibir um gráfico de pizza da diversificação da carteira por setor.
-*   **Análise de Perfil de Risco (Quiz):** Conduz um questionário de múltiplos passos para determinar o perfil de investidor do usuário (Conservador, Moderado, Arrojado).
-*   **Sugestão de Ativos Personalizada:** Oferece sugestões básicas de ativos para estudo, personalizadas de acordo com o perfil de risco do usuário.
+* **Integração Contínua Automática (CI):** Pipeline configurado no GitHub Actions para rodar testes isolados na nuvem e validar a construção das imagens Docker de todos os microsserviços.
+* **Análise de Ativos em Tempo Real:** Fornece cotações e dados de ativos via API externa (Brapi), com fallback de segurança e Circuit Breaker.
+* **Gestão de Portfólio Completa:** Permite adicionar, visualizar e remover ativos da carteira, com cálculo automático de preço médio ponderado.
+* **Cálculo de Performance:** Calcula o valor total investido, o valor atual, o lucro/prejuízo e a rentabilidade percentual da carteira.
+* **Análise de Diversificação Visual:** Comunica-se com um microsserviço Python para gerar e exibir um gráfico de pizza da diversificação da carteira por setor.
+* **Análise de Perfil de Risco (Quiz):** Conduz um questionário de múltiplos passos para determinar o perfil de investidor do usuário (Conservador, Moderado, Arrojado).
+* **Sugestão de Ativos Personalizada:** Oferece sugestões básicas de ativos para estudo, personalizadas de acordo com o perfil de risco do usuário.
 
 ## 🚀 Como Rodar o Projeto
 
 **Pré-requisitos:**
-*   `Git` instalado.
-*   `Docker` e `Docker Compose` instalados e em execução.
+* `Git` instalado.
+* `Docker` e `Docker Compose` instalados e em execução.
 
 **Passos:**
 
 1.  **Clone o repositório:**
     ```bash
-    git clone https://github.com/gabrielboliveira-dev/Financial_Advisor_Chatbot.git
+    git clone [https://github.com/gabrielboliveira-dev/Financial_Advisor_Chatbot.git](https://github.com/gabrielboliveira-dev/Financial_Advisor_Chatbot.git)
     cd Financial_Advisor_Chatbot
     ```
 
@@ -112,16 +113,8 @@ O chatbot oferece as seguintes funcionalidades, acessíveis através de comandos
     docker-compose up --build
     ```
     *(Nota: o banco de dados é mapeado na porta 5433 para evitar conflitos com instalações locais).*
-    
+
     Aguarde até que os logs indiquem que os três serviços (`db`, `analysis-service`, `backend`) estão em execução e prontos.
-
-## 🗺️ Roteiro do Projeto
-
-* [✔️] **Fase 1: Fundação e Dados de Ativos (Concluída)**
-* [✔️] **Fase 2: Contexto do Usuário & Portfólio (Concluída)**
-* [✔️] **Fase 3: Análise e Inteligência (Concluída)**
-* [✔️] **Fase 4: Personalização e Recomendações (Concluída)**
-* [✔️] **Fase 5: Resiliência, Testes e Flexibilidade (Versão 1.1)**
 
 ## 🤝 Como Contribuir
 
