@@ -12,7 +12,7 @@ public class QuizStateCache {
     private final Map<Long, QuizState> userQuizState = new ConcurrentHashMap<>();
 
     public void startQuiz(Long chatId) {
-        userQuizState.put(chatId, new QuizState());
+        userQuizState.put(chatId, new QuizState(1, 0));
     }
 
     public Optional<QuizState> findByChatId(Long chatId) {
@@ -22,8 +22,14 @@ public class QuizStateCache {
     public void updateUserScore(Long chatId, int score) {
         QuizState currentState = userQuizState.get(chatId);
         if (currentState != null) {
-            currentState.addScore(score);
-            currentState.nextQuestion();
+            currentState.setScore(currentState.getScore() + score);
+        }
+    }
+
+    public void advanceQuestion(Long chatId) {
+        QuizState currentState = userQuizState.get(chatId);
+        if (currentState != null) {
+            currentState.setCurrentQuestionId(currentState.getCurrentQuestionId() + 1);
         }
     }
 
@@ -35,12 +41,28 @@ public class QuizStateCache {
         private int currentQuestionId = 1;
         private int score = 0;
 
-        public int getCurrentQuestionId() { return currentQuestionId; }
-        public int getScore() { return score; }
+        public QuizState() {
+        }
 
-        public void nextQuestion() { this.currentQuestionId++; }
-        public void addScore(int points) { this.score += points; }
+        public QuizState(int currentQuestionId, int score) {
+            this.currentQuestionId = currentQuestionId;
+            this.score = score;
+        }
+
+        public int getCurrentQuestionId() {
+            return currentQuestionId;
+        }
+
+        public int getScore() {
+            return score;
+        }
+
+        public void setCurrentQuestionId(int currentQuestionId) {
+            this.currentQuestionId = currentQuestionId;
+        }
+
+        public void setScore(int score) {
+            this.score = score;
+        }
     }
-
-
 }
